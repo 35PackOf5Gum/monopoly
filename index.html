@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
 <title>Monopoly — 1v1</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
 <style>
 :root{
+  color-scheme:dark; /* declare we're already dark so browsers don't apply auto-darkening filters */
   --brown:#955436; --lblue:#aae0fa; --pink:#d93a96; --orange:#f7941d;
   --red:#ed1b24; --yellow:#fef200; --green:#1fb25a; --dblue:#0072bb;
   --board-bg:#cde6d0; --cell-bg:#cde6d0; --line:#1b1b1b;
@@ -348,7 +350,7 @@ function online(){return NET.mode!=='solo';}
 function teardownNet(){
   try{if(NET.conn)NET.conn.close();}catch(e){}
   try{if(NET.peer)NET.peer.destroy();}catch(e){}
-  NET.mode='solo';NET.seat=0;NET.peer=null;NET.conn=null;NET.pending={};NET.manageSession=null;NET.manageRerender=null;NET.activeReq=false;
+  NET.mode='solo';NET.seat=0;NET.peer=null;NET.conn=null;NET.pending={};NET.manageSession=null;NET.manageRerender=null;NET.activeReq=false;NET.awaitingHello=false;
 }
 /* ================= STATE ================= */
 let state=null;
@@ -1545,6 +1547,22 @@ window.addEventListener('unhandledrejection',e=>{console.error(e.reason);});
 const CODECHARS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 function randCode(n){let s='';for(let i=0;i<n;i++)s+=CODECHARS[Math.floor(Math.random()*CODECHARS.length)];return s;}
 const ROOMPREFIX='mnply1v1-';
+const PEERCFG={config:{iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:global.stun.twilio.com:3478'},
+]}};
+function copyText(t){
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).catch(()=>fallbackCopy(t));}
+  else fallbackCopy(t); // file:// has no clipboard API — use the old-school way
+}
+function fallbackCopy(t){
+  const ta=document.createElement('textarea');
+  ta.value=t;ta.style.cssText='position:fixed;opacity:0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  ta.remove();
+}
 function hostOnData(msg){
   if(!msg||typeof msg!=='object')return;
   if(msg.t==='res'){const f=NET.pending[msg.id];delete NET.pending[msg.id];if(f)f(msg.v);}
@@ -1613,31 +1631,43 @@ function beginHostedGame(guestName,guestToken){
 }
 function hostGame(name,token){
   NET.mode='host';NET.seat=0;NET.hostName=name;NET.hostToken=token;
+  NET.awaitingHello=true;
   const code=randCode(5);
-  const peer=new Peer(ROOMPREFIX+code);
+  const peer=new Peer(ROOMPREFIX+code,PEERCFG);
   NET.peer=peer;
   const m=showModal(
     '<h2>🌐 Hosting a game</h2>'+
     '<p style="color:#aeb9c6">Share this room code with your friend. They open this same page, choose “Join online game”, and enter it.</p>'+
-    '<div class="codebig" id="roomcode">…</div>'+
+    '<div class="codebig" id="roomcode" title="Click to copy">…</div>'+
     '<p id="hostwait" style="color:#c8b45a;text-align:center">Connecting to matchmaking…</p>'+
-    '<div class="mbtns" style="justify-content:center"><button class="abtn danger" id="hostcancel">Cancel</button></div>'
+    '<div class="mbtns" style="justify-content:center"><button class="abtn" id="copycode">📋 Copy code</button><button class="abtn danger" id="hostcancel">Cancel</button></div>'
   );
+  const flashCopied=()=>{
+    const b=m.querySelector('#copycode');
+    if(!b)return;
+    b.textContent='✅ Copied!';
+    setTimeout(()=>{const bb=m.querySelector('#copycode');if(bb)bb.textContent='📋 Copy code';},1500);
+  };
+  m.querySelector('#copycode').onclick=()=>{copyText(code);flashCopied();};
+  m.querySelector('#roomcode').onclick=()=>{copyText(code);flashCopied();};
   m.querySelector('#hostcancel').onclick=()=>{teardownNet();closeModal();startScreen();};
   peer.on('open',()=>{
-    $('roomcode').textContent=code;
-    $('hostwait').textContent='Waiting for your friend to join…';
+    const rc=$('roomcode');if(rc)rc.textContent=code;
+    const hw=$('hostwait');if(hw)hw.textContent='Waiting for your friend to join…';
   });
+  peer.on('disconnected',()=>{try{peer.reconnect();}catch(e){}});
   peer.on('error',e=>{
     if(String(e.type)==='unavailable-id'){teardownNet();hostGame(name,token);return;}
-    $('hostwait').textContent='Connection error: '+e.type+'. Check your internet and try again.';
+    const hw=$('hostwait');if(hw)hw.textContent='Connection error: '+e.type+'. Check your internet and try again.';
   });
   peer.on('connection',c=>{
     if(NET.conn){try{c.close();}catch(e){}return;} // 1v1 only
     NET.conn=c;
+    const hw=$('hostwait');if(hw)hw.textContent='Friend found — opening game channel…';
     watchConn(c);
     c.on('data',msg=>{
-      if(msg&&msg.t==='hello'&&!state){
+      if(msg&&msg.t==='hello'&&NET.awaitingHello){
+        NET.awaitingHello=false;
         beginHostedGame(String(msg.name||'Friend').slice(0,20)||'Friend',msg.token);
       }else hostOnData(msg);
     });
@@ -1651,10 +1681,12 @@ function joinGame(name,code,token){
     '<div class="mbtns"><button class="abtn danger" id="joincancel">Cancel</button></div>'
   );
   m.querySelector('#joincancel').onclick=()=>{teardownNet();closeModal();startScreen();};
-  const peer=new Peer();
+  const peer=new Peer(PEERCFG);
   NET.peer=peer;
   let opened=false;
   peer.on('open',()=>{
+    const el=$('joinwait');
+    if(el)el.textContent='Found matchmaking — knocking on room '+code+'…';
     const c=peer.connect(ROOMPREFIX+code,{reliable:true});
     NET.conn=c;
     watchConn(c);
@@ -1667,11 +1699,15 @@ function joinGame(name,code,token){
     });
     c.on('data',guestOnData);
   });
+  peer.on('disconnected',()=>{try{peer.reconnect();}catch(e){}});
   peer.on('error',e=>{
     const el=$('joinwait');
-    if(el)el.textContent=String(e.type)==='peer-unavailable'?'Room "'+code+'" not found. Double-check the code.':'Connection error: '+e.type+'.';
+    if(el)el.textContent=String(e.type)==='peer-unavailable'?'Room "'+code+'" not found. Double-check the code (and that your friend is still on the waiting screen).':'Connection error: '+e.type+'.';
   });
-  setTimeout(()=>{if(!opened&&NET.mode==='guest'&&$('joinwait'))$('joinwait').textContent='Still trying… if this hangs, check the code and your internet.';},8000);
+  setTimeout(()=>{
+    if(!opened&&NET.mode==='guest'&&$('joinwait'))
+      $('joinwait').textContent='Still trying… the room was found but the direct connection is slow. If it never opens, one of you may be on a very restrictive network (some hotspots/VPNs block peer-to-peer).';
+  },12000);
 }
 /* ================= START ================= */
 function tokenPickerHTML(){
