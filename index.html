@@ -387,9 +387,9 @@ function sfx(name){
  mode 'host': this machine runs all game logic; guests are remote seats.
  mode 'guest': pure mirror — renders synced state, answers the host's requests. */
 const NET={mode:'solo',seat:0,peer:null,conns:{},lobby:[],maxPlayers:2,pending:{},reqId:0,manageSession:null,manageRerender:null,activeReq:false,awaitingHello:false,gotVer:false,hostName:'',hostToken:''};
-function hostBroadcast(m){for(const k in NET.conns){try{NET.conns[k].send(m);}catch(e){}}}
-function hostSendTo(seat,m){const c=NET.conns[seat];if(c)try{c.send(m);}catch(e){}}
-function guestSend(m){const k=Object.keys(NET.conns)[0];if(k!==undefined)try{NET.conns[k].send(m);}catch(e){}}
+function hostBroadcast(m){for(const k in NET.conns){const c=NET.conns[k];if(c&&c.open)try{c.send(m);}catch(e){}}}
+function hostSendTo(seat,m){const c=NET.conns[seat];if(c&&c.open)try{c.send(m);}catch(e){}}
+function guestSend(m){const k=Object.keys(NET.conns)[0];const c=k!==undefined?NET.conns[k]:null;if(c&&c.open)try{c.send(m);}catch(e){}}
 function rpc(seat,msg){
   return new Promise(res=>{
     const id=++NET.reqId;
@@ -1755,11 +1755,9 @@ async function forfeit(seat){
   if(!state||state.over)return;
   const pl=P(seat);
   if(!pl||pl.bankrupt)return;
+  delete NET.conns[seat]; // drop the dead connection before any broadcasts
   log('🔌 '+pl.name+' disconnected — they forfeit.','g');
-  pl.bankrupt=true; // pre-mark so their turn logic bails the moment we unblock it
   resolvePendingFor(seat);
-  delete NET.conns[seat];
-  pl.bankrupt=false; // bankrupt() below handles the full liquidation exactly once
   await bankrupt(pl,null);
 }
 /* ---- hosting ---- */
