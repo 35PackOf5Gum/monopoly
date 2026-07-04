@@ -16,7 +16,7 @@
   --brown:#955436; --lblue:#aae0fa; --pink:#d93a96; --orange:#f7941d;
   --red:#ed1b24; --yellow:#fef200; --green:#1fb25a; --dblue:#0072bb;
   --board-bg:#cde6d0; --cell-bg:#cde6d0; --line:#1b1b1b;
-  --p0:#2f6fd0; --p1:#d04b2f;
+  --p0:#2f6fd0; --p1:#d04b2f; --p2:#1f9e57; --p3:#a05fd6;
   --ui-bg:#12161c; --panel:#1c232d; --panel2:#242d3a; --text:#e8e6df;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -38,6 +38,15 @@ header button{
   padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px;
 }
 header button:hover{background:#2f3b4b;}
+#updatebar{
+  display:none; background:#4a3d10; border-bottom:1px solid #8a7420; color:#ffe08a;
+  padding:8px 16px; font-size:13px; flex:0 0 auto;
+}
+#updatebar button{
+  background:#8a7420; color:#fff; border:none; border-radius:6px;
+  padding:4px 12px; cursor:pointer; font-weight:700; margin-left:8px; font-size:13px;
+}
+#updatebar button:hover{background:#a58a26;}
 main{flex:1; display:flex; gap:14px; padding:12px; min-height:0;}
 /* ---------- BOARD ---------- */
 #boardwrap{flex:1; display:flex; align-items:center; justify-content:center; min-width:0;}
@@ -72,20 +81,24 @@ main{flex:1; display:flex; gap:14px; padding:12px; min-height:0;}
 .houses .hotel{width:20px; height:11px; background:#c8102e; border:1px solid #700; border-radius:1px;}
 .cell.left .houses,.cell.right .houses{flex-direction:column;}
 .cell.left .houses .hotel,.cell.right .houses .hotel{width:11px; height:20px;}
-.tok{position:absolute; bottom:2px; left:0; right:0; display:flex; justify-content:center; gap:3px; pointer-events:none; z-index:3;}
+.tok{position:absolute; bottom:2px; left:0; right:0; display:flex; justify-content:center; gap:2px; pointer-events:none; z-index:3; flex-wrap:wrap;}
 .cell.top .tok{bottom:auto; top:2px;}
 .cell.left .tok,.cell.right .tok{bottom:auto; top:50%; transform:translateY(-50%);}
 .cell.left .tok{right:26%;}
 .cell.right .tok{left:26%;}
 .tokb{
-  width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.97);
-  display:flex; align-items:center; justify-content:center; font-size:15px; line-height:1;
+  width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,.97);
+  display:flex; align-items:center; justify-content:center; font-size:14px; line-height:1;
   box-shadow:0 2px 6px rgba(0,0,0,.55);
 }
 .tokb.t0{border:2.5px solid var(--p0);}
 .tokb.t1{border:2.5px solid var(--p1);}
+.tokb.t2{border:2.5px solid var(--p2);}
+.tokb.t3{border:2.5px solid var(--p3);}
 .cell.own0{box-shadow:inset 0 0 0 3px var(--p0);}
 .cell.own1{box-shadow:inset 0 0 0 3px var(--p1);}
+.cell.own2{box-shadow:inset 0 0 0 3px var(--p2);}
+.cell.own3{box-shadow:inset 0 0 0 3px var(--p3);}
 .cell.mtg::after{
   content:"MTG"; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) rotate(-20deg);
   background:rgba(40,40,40,.82); color:#fff; font-size:9px; font-weight:800; padding:1px 5px; border-radius:3px; z-index:2;
@@ -122,18 +135,20 @@ main{flex:1; display:flex; gap:14px; padding:12px; min-height:0;}
 #cardshow .cb{font-size:13px; line-height:1.4;}
 /* ---------- SIDEBAR ---------- */
 aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:0;}
+#players{overflow-y:auto; flex:0 1 auto; display:flex; flex-direction:column; gap:8px;}
 .pcard{
-  background:var(--panel); border:1px solid #2c3644; border-radius:10px; padding:10px 12px;
+  background:var(--panel); border:1px solid #2c3644; border-radius:10px; padding:8px 12px; flex:0 0 auto;
 }
 .pcard.turn{border-color:#ffd54a; box-shadow:0 0 0 1px #ffd54a;}
+.pcard.dead{opacity:.45; filter:grayscale(.8);}
 .pcard .top{display:flex; align-items:center; gap:8px;}
-.pcard .tokbig{font-size:22px;}
-.pcard .pname{font-weight:800; font-size:15px;}
-.pcard .cash{margin-left:auto; font-weight:800; font-size:17px; color:#7ee081;}
+.pcard .tokbig{font-size:20px;}
+.pcard .pname{font-weight:800; font-size:14px;}
+.pcard .cash{margin-left:auto; font-weight:800; font-size:16px; color:#7ee081;}
 .pcard .meta{color:#93a0ae; font-size:11px; margin-top:2px;}
-.chips{display:flex; flex-wrap:wrap; gap:3px; margin-top:7px;}
+.chips{display:flex; flex-wrap:wrap; gap:3px; margin-top:6px;}
 .chip{
-  width:17px; height:22px; border-radius:3px; border:1px solid #000; cursor:pointer;
+  width:16px; height:21px; border-radius:3px; border:1px solid #000; cursor:pointer;
   display:flex; align-items:flex-end; justify-content:center; font-size:8px; color:#fff; font-weight:800;
   position:relative;
 }
@@ -152,21 +167,12 @@ aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:
 .abtn.danger{background:#7a2b22; border-color:#a53b2e;}
 .abtn.danger:hover{background:#93362a;}
 #status{font-size:13px; color:#c8b45a; min-height:18px; font-style:italic;}
-#updatebar{
-  display:none; background:#4a3d10; border-bottom:1px solid #8a7420; color:#ffe08a;
-  padding:8px 16px; font-size:13px; flex:0 0 auto;
-}
-#updatebar button{
-  background:#8a7420; color:#fff; border:none; border-radius:6px;
-  padding:4px 12px; cursor:pointer; font-weight:700; margin-left:8px; font-size:13px;
-}
-#updatebar button:hover{background:#a58a26;}
 #log{
   flex:1; background:#0e1319; border:1px solid #2c3644; border-radius:10px;
   padding:10px; overflow-y:auto; font-size:12.5px; line-height:1.55; min-height:80px;
 }
-#log .l0{color:#8db8f5;} #log .l1{color:#f0a08c;} #log .lg{color:#9aa5b1;}
-#log .lq{color:#d9c06a; font-style:italic;}
+#log .l0{color:#8db8f5;} #log .l1{color:#f0a08c;} #log .l2{color:#8ce0a8;} #log .l3{color:#cfa6f2;}
+#log .lg{color:#9aa5b1;} #log .lq{color:#d9c06a; font-style:italic;}
 #log div{margin-bottom:2px;}
 /* ---------- MODALS ---------- */
 #overlay{
@@ -211,16 +217,18 @@ aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:
 .trow .sq{width:12px; height:16px; border-radius:2px; border:1px solid #000;}
 .cashin{width:90px; background:#0e1319; border:1px solid #3a4656; color:var(--text); border-radius:6px; padding:6px 8px; font-size:13px;}
 .namein{width:100%; background:#0e1319; border:1px solid #3a4656; color:var(--text); border-radius:8px; padding:10px; font-size:14px; margin:6px 0;}
-.codebig{font-size:34px; letter-spacing:8px; font-weight:900; color:#ffd54a; text-align:center; background:#0e1319; border:1px dashed #3a4656; border-radius:10px; padding:14px; margin:12px 0; user-select:all;}
+.codebig{font-size:34px; letter-spacing:8px; font-weight:900; color:#ffd54a; text-align:center; background:#0e1319; border:1px dashed #3a4656; border-radius:10px; padding:14px; margin:12px 0; user-select:all; cursor:pointer;}
 .tokpick{display:flex; gap:10px; flex-wrap:wrap; margin:14px 0;}
 .tokpick button{font-size:30px; background:var(--panel2); border:2px solid #3a4656; border-radius:12px; padding:10px 14px; cursor:pointer;}
 .tokpick button:hover{border-color:#ffd54a; background:#2f3b4b;}
 .tokpick button.sel{border-color:#ffd54a; background:#3a4656;}
+.tokpick.small button{font-size:15px; font-weight:800; color:var(--text); padding:10px 16px;}
 .bigbtn{display:block; width:100%; text-align:left; background:var(--panel2); border:1px solid #3a4656; border-radius:12px; padding:14px 16px; color:var(--text); font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px;}
 .bigbtn:hover{border-color:#ffd54a; background:#2f3b4b;}
 .bigbtn small{display:block; color:#93a0ae; font-weight:400; font-size:12px; margin-top:3px;}
 .debtbar{background:#5a1f18; border:1px solid #a53b2e; border-radius:8px; padding:10px 12px; font-weight:700; margin-bottom:10px; color:#ffb4a6;}
 .bidrow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px;}
+.lobbyrow{display:flex; align-items:center; gap:10px; background:var(--panel2); border-radius:8px; padding:8px 12px; margin-bottom:6px; font-size:14px;}
 #gameover-banner{font-size:40px; text-align:center; margin:8px 0;}
 @media (max-width:980px){
   main{flex-direction:column; overflow-y:auto;}
@@ -233,7 +241,7 @@ aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:
 <body>
 <header>
   <h1>MONOPOLY</h1>
-  <span class="sub">1v1 · offline vs Claude · online vs a friend · <span id="ver"></span></span>
+  <span class="sub">2–4 players · vs Claude bots or friends online · <span id="ver"></span></span>
   <span class="spacer"></span>
   <button id="btn-snd" title="Sound on/off">🔊</button>
   <button id="btn-rules">Rules</button>
@@ -313,7 +321,7 @@ const CHANCE=[
  {t:'Speeding fine — pay $15.'},
  {t:'Take a trip to Reading Railroad. If you pass GO, collect $200.'},
  {t:'Take a walk on the Boardwalk. Advance to Boardwalk.'},
- {t:'You have been elected Chairman of the Board. Pay your opponent $50.'},
+ {t:'You have been elected Chairman of the Board. Pay each player $50.'},
  {t:'Your building loan matures. Collect $150.'},
 ];
 const CHEST=[
@@ -325,7 +333,7 @@ const CHEST=[
  {t:'Go directly to Jail. Do not pass GO, do not collect $200.'},
  {t:'Holiday fund matures. Receive $100.'},
  {t:'Income tax refund. Collect $20.'},
- {t:'It’s your birthday! Collect $10 from your opponent.'},
+ {t:'It’s your birthday! Collect $10 from each player.'},
  {t:'Life insurance matures. Collect $100.'},
  {t:'Pay hospital fees of $100.'},
  {t:'Pay school fees of $50.'},
@@ -336,18 +344,17 @@ const CHEST=[
 ];
 const QUIPS={
  buy:["Mine now. 😌","Adding that to the portfolio.","I have a good feeling about this one.","Location, location, location."],
- rentIn:["Thank you kindly. 💰","Pleasure doing business.","The rent economy thrives.","I'll put that toward more houses. On this street. That you land on."],
+ rentIn:["Thank you kindly. 💰","Pleasure doing business.","The rent economy thrives.","I'll put that toward more houses."],
  rentOut:["Ouch. Fine. FINE.","This is highway robbery. Literally.","I want a receipt for that.","Noted. I will remember this."],
  jail:["I'm being framed.","I regret nothing.","Tell my properties I love them.","A minor setback."],
  build:["Construction crews deployed. 🏗️","The skyline improves.","Building my little empire."],
- win:["GG! That was a great game — rematch?","Victory! I promise to be a gracious landlord."],
- lose:["Well played. You've bankrupted an AI. Feel proud.","GG — you earned that one. Rematch?"],
  taunt:["Your move. Choose wisely.","The dice fear me.","I've run the numbers. They favor me.","Statistically speaking, you should worry."]
 };
 const q=a=>a[Math.floor(Math.random()*a.length)];
 const TOKENS=['🎩','🐕','🐈','🏎️','🚢','⛵','👢','🐎','🦖','🐧','🦆','🛒'];
+const AINAMES=['Claude','Claudette','Claude Jr.'];
 const SAVEKEY='monopoly_1v1_save_v1';
-const GAME_VERSION=3; // bump on every release — online play requires both players to match
+const GAME_VERSION=4; // bump on every release — online play requires all players to match
 /* ================= SOUND ================= */
 const SND={enabled:(function(){try{return localStorage.getItem('mono_snd')!=='off';}catch(e){return true;}})(),ctx:null};
 function tone(f,t0,dur,type,vol){
@@ -375,36 +382,44 @@ function sfx(name){
     }
   }catch(e){}
 }
-/* ================= NET ================= */
-// mode 'solo': everything local, seat 0 = human, seat 1 = Claude AI.
-// mode 'host': this machine runs all game logic; seat 0 = host, seat 1 = remote guest.
-// mode 'guest': pure mirror — renders synced state, answers the host's requests.
-const NET={mode:'solo',seat:0,peer:null,conn:null,pending:{},reqId:0,manageSession:null,manageRerender:null,activeReq:false,hostName:'',hostToken:''};
-function netSend(m){try{if(NET.conn)NET.conn.send(m);}catch(e){console.error(e);}}
-function rpc(msg){
+/* ================= NET =================
+ mode 'solo': all local; seat 0 = you, other seats = Claude bots.
+ mode 'host': this machine runs all game logic; guests are remote seats.
+ mode 'guest': pure mirror — renders synced state, answers the host's requests. */
+const NET={mode:'solo',seat:0,peer:null,conns:{},lobby:[],maxPlayers:2,pending:{},reqId:0,manageSession:null,manageRerender:null,activeReq:false,awaitingHello:false,gotVer:false,hostName:'',hostToken:''};
+function hostBroadcast(m){for(const k in NET.conns){try{NET.conns[k].send(m);}catch(e){}}}
+function hostSendTo(seat,m){const c=NET.conns[seat];if(c)try{c.send(m);}catch(e){}}
+function guestSend(m){const k=Object.keys(NET.conns)[0];if(k!==undefined)try{NET.conns[k].send(m);}catch(e){}}
+function rpc(seat,msg){
   return new Promise(res=>{
     const id=++NET.reqId;
-    NET.pending[id]=res;
-    netSend(Object.assign({t:'req',id:id},msg));
+    NET.pending[id]={res:res,seat:seat};
+    hostSendTo(seat,Object.assign({t:'req',id:id},msg));
   });
+}
+function resolvePendingFor(seat){
+  for(const id in NET.pending){
+    if(NET.pending[id].seat===seat){const f=NET.pending[id].res;delete NET.pending[id];try{f(null);}catch(e){}}
+  }
 }
 function isLocalSeat(pid){return pid===NET.seat;}
 function online(){return NET.mode!=='solo';}
 function teardownNet(){
-  try{if(NET.conn)NET.conn.close();}catch(e){}
+  for(const k in NET.conns){try{NET.conns[k].close();}catch(e){}}
   try{if(NET.peer)NET.peer.destroy();}catch(e){}
-  NET.mode='solo';NET.seat=0;NET.peer=null;NET.conn=null;NET.pending={};NET.manageSession=null;NET.manageRerender=null;NET.activeReq=false;NET.awaitingHello=false;NET.gotVer=false;
+  NET.mode='solo';NET.seat=0;NET.peer=null;NET.conns={};NET.lobby=[];NET.pending={};
+  NET.manageSession=null;NET.manageRerender=null;NET.activeReq=false;NET.awaitingHello=false;NET.gotVer=false;
 }
 /* ================= STATE ================= */
 let state=null;
 function P(i){return state.players[i];}
 function pr(i){return state.props[i];}
-function freshState(t0,t1){
+function alive(){return state.players.filter(p=>!p.bankrupt);}
+function freshState(spec){
+  // spec: [{name, token, ai}] — 2 to 4 entries, seat order
   return {
-    players:[
-      {id:0,name:'You',ai:false,token:t0,cash:1500,pos:0,inJail:false,jailTurns:0,cards:[]},
-      {id:1,name:'Claude',ai:true,token:t1,cash:1500,pos:0,inJail:false,jailTurns:0,cards:[]},
-    ],
+    v:GAME_VERSION,
+    players:spec.map((s,i)=>({id:i,name:s.name,ai:!!s.ai,token:s.token,cash:1500,pos:0,inJail:false,jailTurns:0,cards:[],bankrupt:false})),
     props:B.map(()=>({owner:null,houses:0,mortgaged:false})),
     turn:0,
     decks:{chance:shuffle([...CHANCE.keys()]),chest:shuffle([...CHEST.keys()])},
@@ -418,12 +433,13 @@ function freshState(t0,t1){
 }
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function save(){if(online())return;try{localStorage.setItem(SAVEKEY,JSON.stringify(state));}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVEKEY);return s?JSON.parse(s):null;}catch(e){return null;}}
+function loadSave(){try{const s=localStorage.getItem(SAVEKEY);const j=s?JSON.parse(s):null;return (j&&j.v===GAME_VERSION)?j:null;}catch(e){return null;}}
 function clearSave(){try{localStorage.removeItem(SAVEKEY);}catch(e){}}
 /* ================= HELPERS ================= */
 const $=id=>document.getElementById(id);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const fmt=n=>'$'+n.toLocaleString();
+const dead=pl=>state.over||pl.bankrupt; // "stop acting for this player" guard
 function groupIdxs(g){return B.map((s,i)=>s.g===g?i:-1).filter(i=>i>=0);}
 function hasMonopoly(owner,g){return groupIdxs(g).every(i=>pr(i).owner===owner);}
 function ownedBy(pid){return B.map((s,i)=>i).filter(i=>['p','rr','ut'].includes(B[i].t)&&pr(i).owner===pid);}
@@ -456,16 +472,16 @@ function netWorth(pl){
 }
 function appendLog(msg,cls){
   const d=document.createElement('div');
-  d.className=cls===0?'l0':cls===1?'l1':cls==='q'?'lq':'lg';
+  d.className=typeof cls==='number'?('l'+cls):cls==='q'?'lq':'lg';
   d.textContent=msg;
   $('log').appendChild(d);
   $('log').scrollTop=$('log').scrollHeight;
 }
 function log(msg,cls){
   appendLog(msg,cls);
-  if(NET.mode==='host')netSend({t:'log',m:msg,c:cls});
+  if(NET.mode==='host')hostBroadcast({t:'log',m:msg,c:cls});
 }
-function quip(txt){log('Claude: “'+txt+'”','q');}
+function quip(pl,txt){log(pl.name+': “'+txt+'”','q');}
 function status(txt){$('status').textContent=txt||'';}
 /* ================= BOARD RENDER ================= */
 function cellPos(i){
@@ -524,19 +540,19 @@ function refresh(){
   if(!state)return;
   document.querySelectorAll('.cell').forEach(c=>{
     const i=+c.dataset.idx, st=pr(i);
-    c.classList.remove('own0','own1','mtg','active');
+    c.classList.remove('own0','own1','own2','own3','mtg','active');
     if(st&&st.owner!==null){c.classList.add('own'+st.owner); if(st.mortgaged)c.classList.add('mtg');}
     const hz=c.querySelector('.houses');
     if(hz){hz.innerHTML=st.houses===5?'<div class="hotel"></div>':'<div class="h"></div>'.repeat(st.houses);}
     const tk=c.querySelector('.tok');
     tk.innerHTML='';
-    state.players.forEach(p=>{if(!state.over&&p.pos===i)tk.innerHTML+='<span class="tokb t'+p.id+'">'+p.token+'</span>';});
-    if(state.players[state.turn]&&state.players[state.turn].pos===i&&!state.over)c.classList.add('active');
+    state.players.forEach(p=>{if(!state.over&&!p.bankrupt&&p.pos===i)tk.innerHTML+='<span class="tokb t'+p.id+'">'+p.token+'</span>';});
+    if(state.players[state.turn]&&!state.players[state.turn].bankrupt&&state.players[state.turn].pos===i&&!state.over)c.classList.add('active');
   });
   const pv=$('players'); pv.innerHTML='';
   state.players.forEach(p=>{
     const d=document.createElement('div');
-    d.className='pcard'+(state.turn===p.id&&!state.over?' turn':'');
+    d.className='pcard'+(state.turn===p.id&&!state.over&&!p.bankrupt?' turn':'')+(p.bankrupt?' dead':'');
     const owned=sortedOwned(p.id);
     let chips='';
     for(const i of owned){
@@ -547,6 +563,7 @@ function refresh(){
       else chips+='<div class="chip'+cm+'" data-i="'+i+'" title="'+s.n+'" style="background:'+GROUPCOL[s.g]+'">'+(st.houses>0?'<span class="hc">'+(st.houses===5?'H':st.houses)+'</span>':'')+'</div>';
     }
     const extras=[];
+    if(p.bankrupt)extras.push('BANKRUPT');
     if(p.cards.length)extras.push(p.cards.length+'× Get Out of Jail Free');
     if(p.inJail)extras.push('IN JAIL');
     const shownName=p.id===NET.seat&&online()?p.name+' (you)':p.name;
@@ -557,7 +574,7 @@ function refresh(){
     pv.appendChild(d);
   });
   $('turnbanner').textContent=state.over?'Game over':(state.turn===NET.seat?'Your turn':P(state.turn).name+'’s turn');
-  if(NET.mode==='host')netSend({t:'state',s:state});
+  if(NET.mode==='host')hostBroadcast({t:'state',s:state});
 }
 /* ================= DICE ================= */
 const PIPS={1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]};
@@ -565,7 +582,7 @@ function setDie(el,v){[...el.children].forEach((s,i)=>s.style.opacity=PIPS[v].in
 async function rollDice(who){
   const d0=$('die0'),d1=$('die1');
   sfx('dice');
-  if(NET.mode==='host')netSend({t:'dice',rolling:true});
+  if(NET.mode==='host')hostBroadcast({t:'dice',rolling:true});
   d0.classList.add('rolling');d1.classList.add('rolling');
   const end=Date.now()+650;
   while(Date.now()<end){
@@ -576,7 +593,7 @@ async function rollDice(who){
   d0.classList.remove('rolling');d1.classList.remove('rolling');
   const a=1+Math.floor(Math.random()*6),b=1+Math.floor(Math.random()*6);
   setDie(d0,a);setDie(d1,b);
-  if(NET.mode==='host')netSend({t:'dice',a:a,b:b});
+  if(NET.mode==='host')hostBroadcast({t:'dice',a:a,b:b});
   state.lastDice=a+b;
   if(who)log(who+' rolled '+a+' + '+b+' = '+(a+b)+(a===b?' (doubles!)':''),'g');
   return[a,b];
@@ -606,27 +623,27 @@ function closeModal(){$('overlay').classList.remove('show');NET.manageRerender=n
 /* ================= IO LAYER (local vs remote player) ================= */
 async function ioButtons(pid,opts){
   if(isLocalSeat(pid))return uiButtons(opts);
-  return rpc({k:'buttons',opts:opts.map(o=>({label:o.label,value:o.value,cls:o.cls,disabled:!!o.disabled}))});
+  return rpc(pid,{k:'buttons',opts:opts.map(o=>({label:o.label,value:o.value,cls:o.cls,disabled:!!o.disabled}))});
 }
 async function ioBid(pid,i,bid,leader){
   if(isLocalSeat(pid))return openBid(pid,i,bid,leader);
-  return rpc({k:'bid',i:i,bid:bid,leader:leader});
+  return rpc(pid,{k:'bid',i:i,bid:bid,leader:leader});
 }
 async function ioManage(pid,debt){
   if(isLocalSeat(pid))return openManage(pid,debt||0);
   NET.manageSession={seat:pid,debt:debt||0};
-  const ok=await rpc({k:'manage',debt:debt||0});
+  const ok=await rpc(pid,{k:'manage',debt:debt||0});
   NET.manageSession=null;
-  if(debt&&ok&&P(pid).cash<debt)return ioManage(pid,debt); // defensive: guest said "pay" without funds
+  if(debt&&ok&&P(pid).cash<debt&&!P(pid).bankrupt)return ioManage(pid,debt);
   return !!ok;
 }
-async function ioTradeCompose(pid){
-  if(isLocalSeat(pid))return openTradeCompose(pid);
-  return rpc({k:'tradeCompose'});
+async function ioTradeCompose(pid,other){
+  if(isLocalSeat(pid))return openTradeCompose(pid,other);
+  return rpc(pid,{k:'tradeCompose',other:other});
 }
 async function ioTradeDecide(pid,offer,proposerName){
   if(isLocalSeat(pid))return openTradeDecide(pid,offer,proposerName);
-  return rpc({k:'tradeDecide',offer:offer,proposerName:proposerName});
+  return rpc(pid,{k:'tradeDecide',offer:offer,proposerName:proposerName});
 }
 /* ================= MOVEMENT ================= */
 async function moveSteps(pl,n){
@@ -644,7 +661,7 @@ async function goToJail(pl){
   pl.pos=10;pl.inJail=true;pl.jailTurns=0;
   sfx('jail');
   log(pl.name+' — straight to Jail. 🚔',pl.id);
-  if(pl.ai)quip(q(QUIPS.jail));
+  if(pl.ai)quip(pl,q(QUIPS.jail));
   refresh();
   await sleep(500);
 }
@@ -664,7 +681,7 @@ function calcRent(i,dice,flags){
 }
 async function landOn(pl,dice,flags){
   flags=flags||{};
-  if(state.over)return;
+  if(dead(pl))return;
   const i=pl.pos,s=B[i],st=pr(i);
   await sleep(250);
   switch(s.t){
@@ -680,8 +697,8 @@ async function landOn(pl,dice,flags){
         const owner=P(st.owner);
         log(pl.name+' landed on '+s.n+' — rent is '+fmt(rent)+'.',pl.id);
         const ok=await charge(pl,rent,owner,'rent for '+s.n);
-        if(ok&&NET.mode==='solo'){ if(owner.ai)quip(q(QUIPS.rentIn)); else if(pl.ai)quip(q(QUIPS.rentOut)); }
-      }else log(pl.name+' landed on '+(NET.mode==='solo'&&pl.id===0?'your':'their')+' own '+s.n+'.','g');
+        if(ok){ if(owner.ai)quip(owner,q(QUIPS.rentIn)); else if(pl.ai)quip(pl,q(QUIPS.rentOut)); }
+      }else log(pl.name+' landed on '+(pl.id===NET.seat?'your':'their')+' own '+s.n+'.','g');
       break;
     case 'tax':
       log(pl.name+' landed on '+s.n+' — pay '+fmt(s.amt)+'.',pl.id);
@@ -696,9 +713,9 @@ async function landOn(pl,dice,flags){
   }
   refresh();
 }
-/* ================= MONEY ================= */
+/* ================= MONEY & BANKRUPTCY ================= */
 async function charge(pl,amount,to,what){
-  if(state.over)return false;
+  if(dead(pl))return false;
   if(pl.cash<amount){
     log(pl.name+' needs to raise '+fmt(amount-pl.cash)+' to cover '+(what||'the payment')+'.',pl.id);
     const ok=pl.ai?aiRaiseFunds(pl,amount):await humanRaiseFunds(pl,amount);
@@ -719,28 +736,52 @@ async function humanRaiseFunds(pl,amount){
   return await ioManage(pl.id,amount);
 }
 async function bankrupt(pl,creditor){
-  state.over=true;
-  const winner=P(pl.id===0?1:0);
-  log('💥 '+pl.name+' is BANKRUPT!','g');
-  refresh();
-  if(NET.mode==='solo'){
-    clearSave();
-    quip(winner.id===0?q(QUIPS.lose):q(QUIPS.win));
+  if(pl.bankrupt)return;
+  pl.bankrupt=true;
+  pl.inJail=false;
+  // liquidate: buildings sell to the bank at half; deeds go to the creditor (or back to the bank)
+  let salvage=pl.cash;
+  pl.cash=0;
+  for(const i of ownedBy(pl.id)){
+    const st=pr(i),s=B[i];
+    salvage+=st.houses*(s.h||0)/2;
+    st.houses=0;
+    if(creditor&&!creditor.bankrupt){st.owner=creditor.id;}
+    else{st.owner=null;st.mortgaged=false;}
   }
-  if(NET.mode==='host')netSend({t:'over',w:winner.id});
-  await sleep(600);
-  gameOverModal(winner.id,pl.name);
-  $('actions').innerHTML='';
-  status('');
+  while(pl.cards.length){
+    const d=pl.cards.shift();
+    if(creditor&&!creditor.bankrupt)creditor.cards.push(d);
+    else{const defs=d==='chance'?CHANCE:CHEST;state.decks[d].push(defs.findIndex(c=>c.gooj));}
+  }
+  log('💥 '+pl.name+' is BANKRUPT!','g');
+  if(creditor&&!creditor.bankrupt&&salvage>0){creditor.cash+=salvage;log(creditor.name+' receives '+pl.name+'’s remaining assets ('+fmt(salvage)+' plus deeds).','g');}
+  else if(salvage>0)log(pl.name+'’s properties return to the bank.','g');
+  refresh();
+  const rem=alive();
+  if(rem.length<=1){
+    state.over=true;
+    refresh();
+    if(NET.mode==='solo')clearSave();
+    const winner=rem[0]||pl;
+    if(NET.mode==='host')hostBroadcast({t:'over',w:winner.id});
+    await sleep(600);
+    gameOverModal(winner.id,pl.name);
+    $('actions').innerHTML='';
+    status('');
+  }else{
+    save();
+  }
 }
 function gameOverModal(w,loserName){
   const youWon=w===NET.seat;
   sfx(youWon?'win':'lose');
-  const title=youWon?'🏆 YOU WIN!':(NET.mode==='solo'?'🤖 CLAUDE WINS!':'🏆 '+P(w).name.toUpperCase()+' WINS!');
+  const winner=P(w);
+  const title=youWon?'🏆 YOU WIN!':'🏆 '+winner.name.toUpperCase()+' WINS!';
   showModal(
     '<div id="gameover-banner">'+title+'</div>'+
-    '<p style="text-align:center;color:#aeb9c6">'+loserName+' went bankrupt.</p>'+
-    '<h3 style="text-align:center;margin-top:14px">Final net worth — '+P(0).name+': '+fmt(netWorth(P(0)))+' · '+P(1).name+': '+fmt(netWorth(P(1)))+'</h3>'+
+    '<p style="text-align:center;color:#aeb9c6">'+loserName+' went bankrupt — '+(youWon?'you are':winner.name+' is')+' the last landlord standing.</p>'+
+    '<h3 style="text-align:center;margin-top:14px">Final net worth — '+state.players.map(p=>p.name+': '+fmt(netWorth(p))).join(' · ')+'</h3>'+
     '<div class="mbtns" style="justify-content:center"><button class="abtn primary" id="again">Play Again</button></div>'
   );
   $('again').onclick=()=>{closeModal();if(online())teardownNet();startScreen();};
@@ -749,27 +790,28 @@ function gameOverModal(w,loserName){
 async function offerProperty(pl,i){
   const s=B[i];
   if(pl.ai){
-    if(aiWantsBuy(i)){
-      if(P(1).cash<s.p)aiRaiseFunds(P(1),s.p);
-      if(P(1).cash>=s.p){
-        P(1).cash-=s.p;pr(i).owner=1;
+    if(aiWantsBuy(i,pl.id)){
+      if(pl.cash<s.p)aiRaiseFunds(pl,s.p);
+      if(pl.cash>=s.p){
+        pl.cash-=s.p;pr(i).owner=pl.id;
         sfx('cash');
-        log('Claude bought '+s.n+' for '+fmt(s.p)+'.',1);
-        quip(q(QUIPS.buy));
+        log(pl.name+' bought '+s.n+' for '+fmt(s.p)+'.',pl.id);
+        quip(pl,q(QUIPS.buy));
         refresh();return;
       }
     }
-    log('Claude declined '+s.n+' — it goes to auction.',1);
+    log(pl.name+' declined '+s.n+' — it goes to auction.',pl.id);
     await auction(i);
     return;
   }
   log(pl.name+' landed on unowned '+s.n+' ('+fmt(s.p)+').',pl.id);
-  while(true){
+  while(!dead(pl)){
     const c=await ioButtons(pl.id,[
       {label:'Buy '+s.n+' — '+fmt(s.p),value:'buy',cls:'primary',disabled:pl.cash<s.p},
       {label:'Send to Auction',value:'auction'},
       {label:'🏠 Manage (raise cash)',value:'manage'},
     ]);
+    if(dead(pl))return;
     if(c==='manage'){await ioManage(pl.id,0);continue;}
     if(c==='buy'&&pl.cash>=s.p){
       pl.cash-=s.p;pr(i).owner=pl.id;
@@ -777,42 +819,44 @@ async function offerProperty(pl,i){
       log(pl.name+' bought '+s.n+' for '+fmt(s.p)+'.',pl.id);
       refresh();return;
     }
-    if(c==='buy')continue; // stale/invalid remote answer
+    if(c==='buy')continue;
     await auction(i);return;
   }
 }
-function aiAuctionMax(i){
-  const s=B[i];const ai=P(1);
+function aiAuctionMax(i,seat){
+  const s=B[i],me=P(seat);
   let mult=0.9;
-  if(completesFor(1,i))mult=1.6;
-  else if(completesFor(0,i))mult=1.35; // blocking value
+  const oppCompletes=alive().some(p=>p.id!==seat&&completesFor(p.id,i));
+  if(completesFor(seat,i))mult=1.6;
+  else if(oppCompletes)mult=1.35; // blocking value
   else if(s.t==='rr'){
-    const own=countOwned(1,RRS.filter(j=>j!==i));
-    const yours=countOwned(0,RRS.filter(j=>j!==i));
-    mult=1.05+0.25*own+(yours>=2?0.2:0); // chase his set, deny yours
+    const own=countOwned(seat,RRS.filter(j=>j!==i));
+    const oppRR=Math.max(...alive().filter(p=>p.id!==seat).map(p=>countOwned(p.id,RRS.filter(j=>j!==i))).concat([0]));
+    mult=1.05+0.25*own+(oppRR>=2?0.2:0);
   }
-  else if(countOwned(1,s.g?groupIdxs(s.g):[])===1)mult=1.05;
-  return Math.min(Math.floor(s.p*mult),ai.cash-50);
+  else if(countOwned(seat,s.g?groupIdxs(s.g):[])===1)mult=1.05;
+  return Math.min(Math.floor(s.p*mult),me.cash-50);
 }
 async function auction(i){
   const s=B[i];
   log('🔨 '+s.n+' is up for auction!','g');
+  const parts=alive().map(p=>p.id);
+  const out={};parts.forEach(x=>out[x]=false);
+  const aiMax={};parts.forEach(x=>{if(P(x).ai)aiMax[x]=aiAuctionMax(i,x);});
   let bid=0,leader=null;
-  const isAI=seat=>NET.mode==='solo'&&seat===1;
-  const aiMax=isAI(1)?aiAuctionMax(i):0;
-  const out={0:false,1:false};
-  let turn=state.turn===0?1:0; // non-current player opens
-  let guard=200;
+  let idx=(parts.indexOf(state.turn)+1)%parts.length; // player after the current one opens
+  let guard=400;
   while(guard-->0){
-    if(out[0]&&out[1])break;
-    if(leader!==null&&out[leader===0?1:0])break;
-    const seat=turn; turn=turn===0?1:0;
-    if(out[seat]||leader===seat)continue;
-    if(isAI(seat)){
+    const remaining=parts.filter(x=>!out[x]);
+    if(remaining.length===0)break;
+    if(leader!==null&&remaining.length===1&&remaining[0]===leader)break;
+    const seat=parts[idx];idx=(idx+1)%parts.length;
+    if(out[seat]||leader===seat||P(seat).bankrupt)continue;
+    if(P(seat).ai){
       const step=bid<100?10:bid<300?20:50;
       const nb=bid+step;
-      if(nb<=aiMax&&nb<=P(1).cash){bid=nb;leader=1;log('Claude bids '+fmt(bid)+'.',1);await sleep(450);}
-      else{out[1]=true;log('Claude passes.',1);}
+      if(nb<=aiMax[seat]&&nb<=P(seat).cash){bid=nb;leader=seat;log(P(seat).name+' bids '+fmt(bid)+'.',seat);await sleep(420);}
+      else{out[seat]=true;log(P(seat).name+' passes.',seat);}
     }else{
       const r=await ioBid(seat,i,bid,leader);
       if(typeof r!=='number'||r<bid+1||r>P(seat).cash){out[seat]=true;log(P(seat).name+' passes.',seat);}
@@ -825,7 +869,7 @@ async function auction(i){
   w.cash-=bid;pr(i).owner=leader;
   sfx('cash');
   log(w.name+' won the auction for '+s.n+' at '+fmt(bid)+'!',leader);
-  if(NET.mode==='solo'&&leader===1)quip(q(QUIPS.buy));
+  if(w.ai)quip(w,q(QUIPS.buy));
   refresh();
 }
 function openBid(pid,i,bid,leader){
@@ -863,11 +907,11 @@ async function showCardModal(deckName,card,pl){
   cs.querySelector('.cb').textContent=card.t;
   cs.style.display='block';
   sfx('card');
-  if(NET.mode==='host')netSend({t:'card',deck:deckName,text:card.t});
+  if(NET.mode==='host')hostBroadcast({t:'card',deck:deckName,text:card.t});
   log(pl.name+' drew '+(deckName==='chance'?'Chance':'Community Chest')+': “'+card.t+'”',pl.id);
   await sleep(1800);
   cs.style.display='none';
-  if(NET.mode==='host')netSend({t:'card',hide:true});
+  if(NET.mode==='host')hostBroadcast({t:'card',hide:true});
 }
 function guestCard(m){
   const cs=$('cardshow');
@@ -888,7 +932,7 @@ async function drawCard(deckName,pl){
   await showCardModal(deckName,card,pl);
   if(card.gooj){pl.cards.push(deckName);refresh();return;}
   deck.push(idx);
-  const other=P(pl.id===0?1:0);
+  const others=()=>alive().filter(p=>p.id!==pl.id);
   if(deckName==='chance'){
     switch(idx){
       case 0: await moveDirectTo(pl,0); break;
@@ -903,7 +947,7 @@ async function drawCard(deckName,pl){
       case 11: await charge(pl,15,null,'speeding fine'); break;
       case 12: await moveDirectTo(pl,5); await landOn(pl,state.lastDice); break;
       case 13: await moveDirectTo(pl,39); await landOn(pl,state.lastDice); break;
-      case 14: await charge(pl,50,other,'chairman fee'); break;
+      case 14: for(const o of others()){const ok=await charge(pl,50,o,'chairman fee'); if(!ok)break;} break;
       case 15: pl.cash+=150; log(pl.name+' collected $150.',pl.id); break;
     }
   }else{
@@ -915,7 +959,7 @@ async function drawCard(deckName,pl){
       case 5: await goToJail(pl); break;
       case 6: pl.cash+=100; log(pl.name+' collected $100.',pl.id); break;
       case 7: pl.cash+=20; log(pl.name+' collected $20.',pl.id); break;
-      case 8: {const ok=await charge(other,10,pl,'birthday gift'); if(ok)log('🎂 Happy birthday, '+pl.name+'!','g'); break;}
+      case 8: {for(const o of others())await charge(o,10,pl,'birthday gift'); log('🎂 Happy birthday, '+pl.name+'!','g'); break;}
       case 9: pl.cash+=100; log(pl.name+' collected $100.',pl.id); break;
       case 10: await charge(pl,100,null,'hospital fees'); break;
       case 11: await charge(pl,50,null,'school fees'); break;
@@ -945,7 +989,6 @@ function useJailCard(pl){
 }
 /* ================= SPACE INFO ================= */
 function showSpaceInfo(i){
-  // never replace an active dialog (auction, trade, card...) — that would orphan its pending choice
   if($('overlay').classList.contains('show'))return;
   if(!state)return;
   const s=B[i],st=pr(i);
@@ -1007,7 +1050,6 @@ function canBuyHouse(i,pid){
   if(g.some(j=>pr(j).mortgaged))return false;
   const min=Math.min(...g.map(j=>pr(j).houses));
   if(st.houses!==min||P(pid).cash<s.h)return false;
-  // bank building stock: 4 houses upgrade to a hotel, otherwise a house must be available
   return st.houses===4?bankHotels()>=1:bankHouses()>=1;
 }
 function canSellHouse(i,pid){
@@ -1016,7 +1058,6 @@ function canSellHouse(i,pid){
   const g=groupIdxs(s.g);
   const max=Math.max(...g.map(j=>pr(j).houses));
   if(st.houses!==max)return false;
-  // breaking a hotel back into 4 houses requires 4 houses in the bank
   return st.houses===5?bankHouses()>=4:true;
 }
 function canMortgage(i,pid){
@@ -1030,7 +1071,6 @@ function canUnmortgage(i,pid){
   const st=pr(i);
   return st.owner===pid&&st.mortgaged&&P(pid).cash>=unmortgageCost(i);
 }
-// host-side (or solo) application of one manage action, with validation
 function applyManageAct(seat,a,i,debt){
   const pl=P(seat),s=B[i],st=pr(i);
   if(a==='bh'&&!debt&&canBuyHouse(i,seat)){pl.cash-=s.h;st.houses++;sfx('build');log(pl.name+' built a '+(st.houses===5?'hotel':'house')+' on '+s.n+'.',seat);}
@@ -1041,7 +1081,6 @@ function applyManageAct(seat,a,i,debt){
   refresh();
   if(!state.pendingRoll)save();
 }
-// unified manage modal: local seats mutate directly; a guest sends actions to the host
 function openManage(seat,debt){
   return new Promise(res=>{
     const remote=NET.mode==='guest';
@@ -1077,7 +1116,7 @@ function openManage(seat,debt){
       m.querySelectorAll('[data-a]').forEach(b=>{
         b.onclick=()=>{
           const i=+b.dataset.i,a=b.dataset.a;
-          if(remote){netSend({t:'mact',a:a,i:i});} // host validates, applies, re-syncs; render happens on state sync
+          if(remote){guestSend({t:'mact',a:a,i:i});}
           else{applyManageAct(seat,a,i,debt);render();}
         };
       });
@@ -1085,7 +1124,7 @@ function openManage(seat,debt){
         const payBtn=m.querySelector('#mpay');
         if(payBtn)payBtn.onclick=()=>{NET.manageRerender=null;closeModal();res(true);};
         m.querySelector('#mbank').onclick=()=>{
-          if(confirm('Declare bankruptcy and lose the game?')){NET.manageRerender=null;closeModal();res(false);}
+          if(confirm('Declare bankruptcy and leave the game?')){NET.manageRerender=null;closeModal();res(false);}
         };
       }else{
         m.querySelector('#mdone').onclick=()=>{NET.manageRerender=null;closeModal();res(true);};
@@ -1125,27 +1164,28 @@ function aiValue(i,newOwner){
   if(st.mortgaged)v-=s.p*0.55;
   return v;
 }
-function aiEvaluateTrade(humanGives,aiGives,cashFromHuman,cashFromAI,cardsFromHuman,cardsFromAI){
-  cardsFromHuman=cardsFromHuman||0;cardsFromAI=cardsFromAI||0;
-  let gain=cashFromHuman+25*cardsFromHuman,loss=cashFromAI+25*cardsFromAI;
-  for(const i of humanGives)gain+=aiValue(i,1);
-  for(const i of aiGives)loss+=aiValue(i,0);
-  if(P(1).cash-cashFromAI<80)return{ok:false,why:"I can't spare that much cash right now."};
+// evaluates an offer from `proposerSeat` from `seat`'s point of view.
+// offer.give = what the proposer hands over (seat's gain); offer.get = what seat hands over.
+function aiEvaluateTrade(seat,offer,proposerSeat){
+  const cardsIn=offer.cardsGive||0,cardsOut=offer.cardsGet||0;
+  let gain=(offer.cashGive||0)+25*cardsIn,loss=(offer.cashGet||0)+25*cardsOut;
+  for(const i of offer.give)gain+=aiValue(i,seat);
+  for(const i of offer.get)loss+=aiValue(i,proposerSeat);
+  if(P(seat).cash-(offer.cashGet||0)<80)return{ok:false,why:"I can't spare that much cash right now."};
   if(gain>=loss*1.08+10)return{ok:true};
   // flexibility is deterministic per offer — re-proposing the same deal always gets the same answer
-  const key=humanGives.join(',')+'|'+aiGives.join(',')+'|'+cashFromHuman+'|'+cashFromAI+'|'+cardsFromHuman+'|'+cardsFromAI;
+  const key=seat+'<'+proposerSeat+'|'+offer.give.join(',')+'|'+offer.get.join(',')+'|'+(offer.cashGive||0)+'|'+(offer.cashGet||0)+'|'+cardsIn+'|'+cardsOut;
   if(gain>=loss*0.92&&offerHash(key)%100<25)return{ok:true};
   return{ok:false,why:loss>gain*1.5?"That's daylight robbery and you know it.":"Not quite worth it for me — and no, asking again won't change the math."};
 }
 function validOffer(seat,o){
   if(!o||typeof o!=='object')return false;
-  const other=seat===0?1:0;
-  const arrs=['give','get'];
-  for(const k of arrs){if(!Array.isArray(o[k]))return false;}
+  const other=+o.other;
+  if(!(other>=0&&other<state.players.length)||other===seat||P(other).bankrupt)return false;
+  if(!Array.isArray(o.give)||!Array.isArray(o.get))return false;
   if(o.give.some(i=>!tradeable(i,seat)))return false;
   if(o.get.some(i=>!tradeable(i,other)))return false;
-  const nums=['cashGive','cashGet','cardsGive','cardsGet'];
-  for(const k of nums){o[k]=Math.max(0,Math.floor(+o[k]||0));}
+  for(const k of ['cashGive','cashGet','cardsGive','cardsGet'])o[k]=Math.max(0,Math.floor(+o[k]||0));
   if(o.cashGive>P(seat).cash||o.cashGet>P(other).cash)return false;
   if(o.cardsGive>P(seat).cards.length||o.cardsGet>P(other).cards.length)return false;
   if(o.give.length+o.get.length+o.cardsGive+o.cardsGet===0&&o.cashGive===0&&o.cashGet===0)return false;
@@ -1158,21 +1198,19 @@ function sideTxt(props,cash,cards){
   return parts.join(', ')||'nothing';
 }
 function applyTrade(seat,o){
-  const other=seat===0?1:0;
+  const other=+o.other;
   for(const i of o.give)pr(i).owner=other;
   for(const i of o.get)pr(i).owner=seat;
   for(let k=0;k<o.cardsGive;k++)P(other).cards.push(P(seat).cards.shift());
   for(let k=0;k<o.cardsGet;k++)P(seat).cards.push(P(other).cards.shift());
   P(seat).cash+=o.cashGet-o.cashGive;
   P(other).cash+=o.cashGive-o.cashGet;
-  log('Trade completed: '+P(seat).name+' gave ['+sideTxt(o.give,o.cashGive,o.cardsGive)+'] for ['+sideTxt(o.get,o.cashGet,o.cardsGet)+'].','g');
+  log('Trade completed: '+P(seat).name+' gave ['+sideTxt(o.give,o.cashGive,o.cardsGive)+'] to '+P(other).name+' for ['+sideTxt(o.get,o.cashGet,o.cardsGet)+'].','g');
   refresh();
   if(!state.pendingRoll)save();
 }
-// trade composer — used by whichever human is proposing (local or guest)
-function openTradeCompose(seat){
+function openTradeCompose(seat,other){
   return new Promise(res=>{
-    const other=seat===0?1:0;
     const mine=sortedOwned(seat).filter(i=>tradeable(i,seat));
     const theirs=sortedOwned(other).filter(i=>tradeable(i,other));
     const otherName=P(other).name;
@@ -1187,7 +1225,7 @@ function openTradeCompose(seat){
     const colH=mine.map(i=>rowFor(i,'h')).join('')+cardRows(seat,'h');
     const colA=theirs.map(i=>rowFor(i,'a')).join('')+cardRows(other,'a');
     const m=showModal(
-      '<h2>🤝 Propose a Trade</h2>'+
+      '<h2>🤝 Trade with '+otherName+'</h2>'+
       '<div class="tradecols"><div><h3>You give</h3>'+(colH||'<p style="color:#667;font-size:12px">Nothing tradeable</p>')+
       '<h3>Plus cash</h3><input class="cashin" id="cash-h" type="number" min="0" value="0" max="'+P(seat).cash+'"></div>'+
       '<div><h3>'+otherName+' gives</h3>'+(colA||'<p style="color:#667;font-size:12px">Nothing tradeable</p>')+
@@ -1209,11 +1247,10 @@ function openTradeCompose(seat){
       if(cashGive>P(seat).cash){msg.textContent='You only have '+fmt(P(seat).cash)+'.';return;}
       if(cashGet>P(other).cash){msg.textContent=otherName+' only has '+fmt(P(other).cash)+'.';return;}
       closeModal();
-      res({give:give,get:get,cashGive:cashGive,cashGet:cashGet,cardsGive:cardsGive,cardsGet:cardsGet});
+      res({other:other,give:give,get:get,cashGive:cashGive,cashGet:cashGet,cardsGive:cardsGive,cardsGet:cardsGet});
     };
   });
 }
-// accept/decline view for the player receiving an offer. `offer` is relative to the proposer.
 function openTradeDecide(seat,offer,proposerName){
   return new Promise(res=>{
     const m=showModal(
@@ -1227,123 +1264,142 @@ function openTradeDecide(seat,offer,proposerName){
   });
 }
 async function doTrade(seat){
-  const offer=await ioTradeCompose(seat);
+  const opps=alive().filter(p=>p.id!==seat);
+  if(opps.length===0)return;
+  let other;
+  if(opps.length===1)other=opps[0].id;
+  else{
+    const c=await ioButtons(seat,opps.map(p=>({label:'🤝 Trade with '+p.name,value:'s'+p.id})).concat([{label:'Cancel',value:'x'}]));
+    if(c==null||c==='x')return;
+    other=+String(c).slice(1);
+    if(!(other>=0)||!alive().some(p=>p.id===other))return;
+  }
+  const offer=await ioTradeCompose(seat,other);
   if(!offer)return;
+  offer.other=other;
   if(!validOffer(seat,offer)){log('Trade offer was invalid.','g');return;}
-  const other=seat===0?1:0;
   let ok,why='';
-  if(NET.mode==='solo'){
-    const v=aiEvaluateTrade(offer.give,offer.get,offer.cashGive,offer.cashGet,offer.cardsGive,offer.cardsGet);
+  const target=P(other);
+  if(target.ai){
+    const v=aiEvaluateTrade(other,offer,seat);
     ok=v.ok;why=v.why;
   }else{
-    log(P(seat).name+' proposes a trade — waiting for '+P(other).name+'…','g');
+    log(P(seat).name+' proposes a trade — waiting for '+target.name+'…','g');
     ok=await ioTradeDecide(other,offer,P(seat).name);
-    if(!validOffer(seat,offer))ok=false; // state may have shifted
+    if(!validOffer(seat,offer))ok=false;
   }
   if(ok){
     applyTrade(seat,offer);
-    if(NET.mode==='solo')quip("Deal. 🤝");
+    if(target.ai)quip(target,"Deal. 🤝");
   }else{
-    if(NET.mode==='solo')quip(why);
-    else log(P(other).name+' declined the trade.','g');
+    if(target.ai)quip(target,why);
+    else log(target.name+' declined the trade.','g');
   }
 }
-function findAIProposal(){
+function findAIProposal(seat){
   const groups=[...new Set(B.filter(s=>s.t==='p').map(s=>s.g))];
-  let wantIdx=null,giveIdx=null;
+  // a group I could complete, missing piece held by opponent o
   for(const g of groups){
     const gi=groupIdxs(g);
-    if(countOwned(1,gi)===gi.length-1&&countOwned(0,gi)===1){
-      const i=gi.find(j=>pr(j).owner===0);
-      if(tradeable(i,0)){wantIdx=i;break;}
+    if(countOwned(seat,gi)!==gi.length-1)continue;
+    const missing=gi.find(j=>pr(j).owner!==seat);
+    const o=pr(missing).owner;
+    if(o===null||o===seat||P(o).bankrupt||!tradeable(missing,o))continue;
+    // find something o could complete that I hold
+    for(const g2 of groups){
+      const gj=groupIdxs(g2);
+      if(countOwned(o,gj)!==gj.length-1)continue;
+      const giveIdx=gj.find(j=>pr(j).owner!==o);
+      if(giveIdx===undefined||pr(giveIdx).owner!==seat||!tradeable(giveIdx,seat))continue;
+      const key=seat+':'+missing+'-'+giveIdx;
+      if(state.proposed[key])continue;
+      let cash=Math.max(0,B[missing].p-B[giveIdx].p);
+      cash=Math.min(cash+50,P(seat).cash-150);
+      if(cash<0)cash=0;
+      return{want:missing,give:giveIdx,cash:cash,key:key,o:o};
     }
   }
-  for(const g of groups){
-    const gi=groupIdxs(g);
-    if(countOwned(0,gi)===gi.length-1&&countOwned(1,gi)===1){
-      const i=gi.find(j=>pr(j).owner===1);
-      if(tradeable(i,1)){giveIdx=i;break;}
-    }
-  }
-  if(wantIdx===null||giveIdx===null)return null;
-  const key=wantIdx+'-'+giveIdx;
-  if(state.proposed[key])return null;
-  let cash=Math.max(0,B[wantIdx].p-B[giveIdx].p);
-  cash=Math.min(cash+50,P(1).cash-150);
-  if(cash<0)cash=0;
-  return{want:wantIdx,give:giveIdx,cash:cash,key:key};
+  return null;
 }
-async function aiMaybePropose(){
-  const prop=findAIProposal();
-  if(!prop)return;
-  state.proposed[prop.key]=true;
-  quip("I have a business proposition for you... this completes a set for each of us.");
+async function aiMaybePropose(pl){
+  const pr_=findAIProposal(pl.id);
+  if(!pr_)return;
+  state.proposed[pr_.key]=true;
+  const offer={other:pr_.o,give:[pr_.give],get:[pr_.want],cashGive:pr_.cash,cashGet:0,cardsGive:0,cardsGet:0};
+  const target=P(pr_.o);
+  if(target.ai){
+    const v=aiEvaluateTrade(pr_.o,offer,pl.id);
+    if(v.ok){applyTrade(pl.id,offer);quip(target,"Deal. 🤝");}
+    return;
+  }
+  quip(pl,"I have a business proposition — this completes a set for each of us...");
   await sleep(400);
-  const offer={give:[prop.give],get:[prop.want],cashGive:prop.cash,cashGet:0,cardsGive:0,cardsGet:0};
-  const accepted=await openTradeDecide(0,offer,'Claude');
+  const accepted=await ioTradeDecide(pr_.o,offer,pl.name);
   if(accepted){
-    applyTrade(1,{give:[prop.give],get:[prop.want],cashGive:prop.cash,cashGet:0,cardsGive:0,cardsGet:0});
-    quip("Deal! May the best landlord win.");
+    applyTrade(pl.id,offer);
+    quip(pl,"Deal! May the best landlord win.");
   }else{
-    quip("Suit yourself. The offer expires... forever.");
+    quip(pl,"Suit yourself. The offer expires... forever.");
   }
 }
 /* ================= AI BRAIN ================= */
-function humanThreatLevel(){
+function threatFor(seat){
   let maxRent=0;
-  for(const i of ownedBy(0)){
-    const s=B[i],st=pr(i);
-    if(st.mortgaged)continue;
-    let r=s.t==='p'?(st.houses>0?s.r[st.houses]:hasMonopoly(0,s.g)?s.r[0]*2:s.r[0]):
-      s.t==='rr'?calcRent(i,7):calcRent(i,7,{});
-    if(r>maxRent)maxRent=r;
+  for(const p of alive()){
+    if(p.id===seat)continue;
+    for(const i of ownedBy(p.id)){
+      const s=B[i],st=pr(i);
+      if(st.mortgaged)continue;
+      const r=s.t==='p'?(st.houses>0?s.r[st.houses]:hasMonopoly(p.id,s.g)?s.r[0]*2:s.r[0]):calcRent(i,7);
+      if(r>maxRent)maxRent=r;
+    }
   }
   return maxRent;
 }
-function aiReserve(){
-  const threat=humanThreatLevel();
-  return Math.min(600,Math.max(120,Math.floor(threat*0.8)));
+function aiReserve(seat){
+  return Math.min(600,Math.max(120,Math.floor(threatFor(seat)*0.8)));
 }
-function aiWantsBuy(i){
-  const s=B[i],ai=P(1);
-  const key=completesFor(1,i)||completesFor(0,i)||s.t==='rr';
-  if(key)return liquidWorth(ai)-s.p>=60;
-  return ai.cash-s.p>=Math.max(100,aiReserve()*0.5);
+function aiWantsBuy(i,seat){
+  const s=B[i],me=P(seat);
+  const key=completesFor(seat,i)||alive().some(p=>p.id!==seat&&completesFor(p.id,i))||s.t==='rr';
+  if(key)return liquidWorth(me)-s.p>=60;
+  return me.cash-s.p>=Math.max(100,aiReserve(seat)*0.5);
 }
 function aiRaiseFunds(pl,target){
+  const seat=pl.id;
   const tries=[
-    i=>B[i].t==='p'&&!hasMonopoly(1,B[i].g)&&canMortgage(i,1),
-    i=>B[i].t==='ut'&&canMortgage(i,1),
-    i=>B[i].t==='rr'&&canMortgage(i,1),
+    i=>B[i].t==='p'&&!hasMonopoly(seat,B[i].g)&&canMortgage(i,seat),
+    i=>B[i].t==='ut'&&canMortgage(i,seat),
+    i=>B[i].t==='rr'&&canMortgage(i,seat),
   ];
   for(const test of tries){
-    for(const i of ownedBy(1)){
+    for(const i of ownedBy(seat)){
       if(pl.cash>=target)return true;
-      if(test(i)){pr(i).mortgaged=true;pl.cash+=B[i].p/2;log('Claude mortgaged '+B[i].n+' for '+fmt(B[i].p/2)+'.',1);}
+      if(test(i)){pr(i).mortgaged=true;pl.cash+=B[i].p/2;log(pl.name+' mortgaged '+B[i].n+' for '+fmt(B[i].p/2)+'.',seat);}
     }
   }
   let guard=100;
   while(pl.cash<target&&guard-->0){
-    const cand=ownedBy(1).filter(i=>canSellHouse(i,1)).sort((a,b)=>pr(b).houses-pr(a).houses)[0];
+    const cand=ownedBy(seat).filter(i=>canSellHouse(i,seat)).sort((a,b)=>pr(b).houses-pr(a).houses)[0];
     if(cand===undefined)break;
     pr(cand).houses--;pl.cash+=B[cand].h/2;
-    log('Claude sold a building on '+B[cand].n+'.',1);
+    log(pl.name+' sold a building on '+B[cand].n+'.',seat);
   }
-  for(const i of ownedBy(1)){
+  for(const i of ownedBy(seat)){
     if(pl.cash>=target)break;
-    if(canMortgage(i,1)){pr(i).mortgaged=true;pl.cash+=B[i].p/2;log('Claude mortgaged '+B[i].n+'.',1);}
+    if(canMortgage(i,seat)){pr(i).mortgaged=true;pl.cash+=B[i].p/2;log(pl.name+' mortgaged '+B[i].n+'.',seat);}
   }
   refresh();
   return pl.cash>=target;
 }
-function aiManageEconomy(){
-  const ai=P(1);
-  const buildReserve=Math.max(80,Math.min(350,Math.floor(humanThreatLevel()*0.5)));
-  for(const i of ownedBy(1)){
+function aiManageEconomy(pl){
+  const seat=pl.id;
+  const buildReserve=Math.max(80,Math.min(350,Math.floor(threatFor(seat)*0.5)));
+  for(const i of ownedBy(seat)){
     const s=B[i];
-    if(pr(i).mortgaged&&s.g&&hasMonopoly(1,s.g)&&ai.cash-unmortgageCost(i)>=buildReserve){
-      ai.cash-=unmortgageCost(i);pr(i).mortgaged=false;
-      log('Claude unmortgaged '+s.n+'.',1);
+    if(pr(i).mortgaged&&s.g&&hasMonopoly(seat,s.g)&&pl.cash-unmortgageCost(i)>=buildReserve){
+      pl.cash-=unmortgageCost(i);pr(i).mortgaged=false;
+      log(pl.name+' unmortgaged '+s.n+'.',seat);
     }
   }
   const prio=['orange','lblue','red','pink','yellow','dblue','green','brown'];
@@ -1351,25 +1407,25 @@ function aiManageEconomy(){
   while(guard-->0){
     let done=true;
     for(const g of prio){
-      if(!hasMonopoly(1,g))continue;
-      const cand=groupIdxs(g).filter(i=>canBuyHouse(i,1)&&ai.cash-B[i].h>=buildReserve)
+      if(!hasMonopoly(seat,g))continue;
+      const cand=groupIdxs(g).filter(i=>canBuyHouse(i,seat)&&pl.cash-B[i].h>=buildReserve)
         .sort((a,b)=>pr(a).houses-pr(b).houses)[0];
       if(cand!==undefined){
-        ai.cash-=B[cand].h;pr(cand).houses++;built++;
-        log('Claude built a '+(pr(cand).houses===5?'hotel':'house')+' on '+B[cand].n+'.',1);
+        pl.cash-=B[cand].h;pr(cand).houses++;built++;
+        log(pl.name+' built a '+(pr(cand).houses===5?'hotel':'house')+' on '+B[cand].n+'.',seat);
         done=false;break;
       }
     }
     if(done)break;
   }
-  if(built>0){sfx('build');quip(q(QUIPS.build));}
-  const spare=aiReserve()+200;
-  const morts=ownedBy(1).filter(i=>pr(i).mortgaged)
+  if(built>0){sfx('build');quip(pl,q(QUIPS.build));}
+  const spare=aiReserve(seat)+200;
+  const morts=ownedBy(seat).filter(i=>pr(i).mortgaged)
     .sort((a,b)=>((B[a].t==='rr'?0:1)-(B[b].t==='rr'?0:1))||B[a].p-B[b].p);
   for(const i of morts){
-    if(ai.cash-unmortgageCost(i)<spare)continue;
-    ai.cash-=unmortgageCost(i);pr(i).mortgaged=false;
-    log('Claude unmortgaged '+B[i].n+'.',1);
+    if(pl.cash-unmortgageCost(i)<spare)continue;
+    pl.cash-=unmortgageCost(i);pr(i).mortgaged=false;
+    log(pl.name+' unmortgaged '+B[i].n+'.',seat);
   }
   refresh();
 }
@@ -1379,7 +1435,6 @@ async function humanTurn(pl){
   status(isLocalSeat(pid)?'Your turn!':'Waiting for '+pl.name+'…');
   if(!isLocalSeat(pid))$('actions').innerHTML='';
   let rolled=state.phase==='post';
-  // a roll checkpointed before the page was closed must be replayed, not re-rolled
   if(!rolled&&state.pendingRoll){
     const pend=state.pendingRoll;
     log('Resuming '+pl.name+'’s interrupted roll: '+pend.a+' + '+pend.b+'.',pid);
@@ -1388,7 +1443,7 @@ async function humanTurn(pl){
     else await humanRollChain(pl,[pend.a,pend.b]);
     rolled=true;
   }
-  while(!rolled&&!state.over){
+  while(!rolled&&!dead(pl)){
     const opts=[];
     if(pl.inJail){
       opts.push({label:'🎲 Roll for Doubles ('+(pl.jailTurns+1)+'/3)',value:'jailroll',cls:'primary'});
@@ -1400,7 +1455,7 @@ async function humanTurn(pl){
     opts.push({label:'🏠 Manage',value:'manage'});
     opts.push({label:'🤝 Trade',value:'trade'});
     const c=await ioButtons(pid,opts);
-    if(state.over)return;
+    if(dead(pl))return;
     if(c==='manage'){await ioManage(pid,0);continue;}
     if(c==='trade'){await doTrade(pid);continue;}
     if(c==='bail'&&pl.inJail&&pl.cash>=50){pl.cash-=50;pl.inJail=false;pl.jailTurns=0;log(pl.name+' paid $50 bail.',pid);refresh();continue;}
@@ -1416,15 +1471,15 @@ async function humanTurn(pl){
       rolled=true;
     }
   }
-  if(state.over)return;
+  if(dead(pl))return;
   if(state.phase!=='post'){state.phase='post';save();}
-  while(!state.over){
+  while(!dead(pl)){
     const c=await ioButtons(pid,[
       {label:'End Turn ▶',value:'end',cls:'primary'},
       {label:'🏠 Manage',value:'manage'},
       {label:'🤝 Trade',value:'trade'},
     ]);
-    if(state.over)return;
+    if(dead(pl))return;
     if(c==='manage'){await ioManage(pid,0);continue;}
     if(c==='trade'){await doTrade(pid);continue;}
     break;
@@ -1451,7 +1506,7 @@ async function humanJailRoll(pl,a,b){
 }
 async function humanRollChain(pl,pre){
   let doubles=0,again=true;
-  while(again&&!state.over){
+  while(again&&!dead(pl)){
     again=false;
     let a,b;
     if(pre){a=pre[0];b=pre[1];pre=null;}
@@ -1470,7 +1525,7 @@ async function humanRollChain(pl,pre){
     await landOn(pl,a+b);
     state.pendingRoll=null;
     if(!state.over)save();
-    if(a===b&&!pl.inJail&&!state.over){
+    if(a===b&&!pl.inJail&&!dead(pl)){
       log('Doubles — '+pl.name+' rolls again!',pl.id);
       while(true){
         const cc=await ioButtons(pl.id,[
@@ -1478,7 +1533,7 @@ async function humanRollChain(pl,pre){
           {label:'🏠 Manage',value:'manage'},
           {label:'🤝 Trade',value:'trade'},
         ]);
-        if(state.over)return;
+        if(dead(pl))return;
         if(cc==='manage'){await ioManage(pl.id,0);continue;}
         if(cc==='trade'){await doTrade(pl.id);continue;}
         break;
@@ -1487,89 +1542,88 @@ async function humanRollChain(pl,pre){
     }
   }
 }
-/* ================= AI TURN (solo mode) ================= */
-async function aiTurn(){
-  const ai=P(1);
-  status('Claude is thinking…');
+/* ================= AI TURN ================= */
+async function aiTurn(pl){
+  status(pl.name+' is thinking…');
   $('actions').innerHTML='';
-  if(state.phase==='post'){aiManageEconomy();status('');await sleep(400);return;}
+  if(state.phase==='post'){aiManageEconomy(pl);status('');await sleep(400);return;}
   if(state.pendingRoll){
     const pend=state.pendingRoll;
-    log('Resuming Claude’s interrupted roll: '+pend.a+' + '+pend.b+'.',1);
+    log('Resuming '+pl.name+'’s interrupted roll: '+pend.a+' + '+pend.b+'.',pl.id);
     setDie($('die0'),pend.a);setDie($('die1'),pend.b);
-    if(pend.jail)await aiJailRoll(ai,pend.a,pend.b);
-    else await aiRollChain(ai,[pend.a,pend.b]);
-    if(state.over)return;
-    aiManageEconomy();
+    if(pend.jail)await aiJailRoll(pl,pend.a,pend.b);
+    else await aiRollChain(pl,[pend.a,pend.b]);
+    if(dead(pl))return;
+    aiManageEconomy(pl);
     state.phase='post';save();
     status('');return;
   }
-  await sleep(700);
-  if(state.turnCount>3&&Math.random()<0.6)await aiMaybePropose();
-  if(state.over)return;
-  if(ai.inJail){
-    const dangerous=humanThreatLevel()>=100;
-    if(ai.cards.length>0&&!dangerous){useJailCard(ai);refresh();await sleep(400);}
-    else if(!dangerous&&ai.cash>=200){ai.cash-=50;ai.inJail=false;ai.jailTurns=0;log('Claude paid $50 bail.',1);refresh();await sleep(400);}
+  await sleep(650);
+  if(state.turnCount>state.players.length&&Math.random()<0.5)await aiMaybePropose(pl);
+  if(dead(pl))return;
+  if(pl.inJail){
+    const dangerous=threatFor(pl.id)>=100;
+    if(pl.cards.length>0&&!dangerous){useJailCard(pl);refresh();await sleep(400);}
+    else if(!dangerous&&pl.cash>=200){pl.cash-=50;pl.inJail=false;pl.jailTurns=0;log(pl.name+' paid $50 bail.',pl.id);refresh();await sleep(400);}
     else{
-      const[a,b]=await rollDice('Claude (in jail)');
+      const[a,b]=await rollDice(pl.name+' (in jail)');
       state.pendingRoll={a:a,b:b,jail:1};save();
-      await aiJailRoll(ai,a,b);
-      if(state.over)return;
-      aiManageEconomy();
+      await aiJailRoll(pl,a,b);
+      if(dead(pl))return;
+      aiManageEconomy(pl);
       state.phase='post';save();
       status('');return;
     }
   }
-  if(state.over)return;
-  await aiRollChain(ai,null);
-  if(state.over)return;
-  aiManageEconomy();
+  if(dead(pl))return;
+  await aiRollChain(pl,null);
+  if(dead(pl))return;
+  aiManageEconomy(pl);
   state.phase='post';save();
-  if(Math.random()<0.18)quip(q(QUIPS.taunt));
+  if(Math.random()<0.15)quip(pl,q(QUIPS.taunt));
   status('');
-  await sleep(500);
+  await sleep(450);
 }
-async function aiJailRoll(ai,a,b){
+async function aiJailRoll(pl,a,b){
   if(a===b){
-    log('Doubles — Claude is out of jail!',1);
-    ai.inJail=false;ai.jailTurns=0;
-    await moveSteps(ai,a+b);await landOn(ai,a+b);
+    log('Doubles — '+pl.name+' is out of jail!',pl.id);
+    pl.inJail=false;pl.jailTurns=0;
+    await moveSteps(pl,a+b);await landOn(pl,a+b);
   }else{
-    ai.jailTurns++;
-    if(ai.jailTurns>=3){
-      log('Third failed attempt — Claude must pay $50 bail.',1);
-      const ok=await charge(ai,50,null,'bail');
+    pl.jailTurns++;
+    if(pl.jailTurns>=3){
+      log('Third failed attempt — '+pl.name+' must pay $50 bail.',pl.id);
+      const ok=await charge(pl,50,null,'bail');
       if(!ok)return;
-      ai.inJail=false;ai.jailTurns=0;
-      await moveSteps(ai,a+b);await landOn(ai,a+b);
-    }else log('No doubles — Claude stays in jail ('+ai.jailTurns+'/3).',1);
+      pl.inJail=false;pl.jailTurns=0;
+      await moveSteps(pl,a+b);await landOn(pl,a+b);
+    }else log('No doubles — '+pl.name+' stays in jail ('+pl.jailTurns+'/3).',pl.id);
   }
   state.pendingRoll=null;
   if(!state.over)save();
 }
-async function aiRollChain(ai,pre){
+async function aiRollChain(pl,pre){
   let doubles=0,again=true;
-  while(again&&!state.over){
+  while(again&&!dead(pl)){
     again=false;
     let a,b;
     if(pre){a=pre[0];b=pre[1];pre=null;}
     else{
-      const r=await rollDice('Claude');a=r[0];b=r[1];
+      const r=await rollDice(pl.name);a=r[0];b=r[1];
       state.pendingRoll={a:a,b:b,jail:0};save();
     }
     if(a===b)doubles++;
     if(doubles>=3){
-      log('Three doubles in a row — Claude goes to jail!',1);
-      await goToJail(ai);
+      log('Three doubles in a row — '+pl.name+' goes to jail!',pl.id);
+      await goToJail(pl);
       state.pendingRoll=null;save();
       break;
     }
-    await moveSteps(ai,a+b);
-    await landOn(ai,a+b);
+    await moveSteps(pl,a+b);
+    await landOn(pl,a+b);
     state.pendingRoll=null;
     if(!state.over)save();
-    if(a===b&&!ai.inJail&&!state.over){log('Doubles — Claude rolls again.',1);again=true;await sleep(400);}
+    if(a===b&&!pl.inJail&&!dead(pl)){log('Doubles — '+pl.name+' rolls again.',pl.id);again=true;await sleep(400);}
   }
 }
 /* ================= GAME LOOP ================= */
@@ -1578,16 +1632,20 @@ async function gameLoop(){
   const gen=++gameGen;
   while(!state.over&&gen===gameGen){
     refresh();
+    const cur=P(state.turn);
     try{
-      if(NET.mode==='solo'&&state.turn===1)await aiTurn();
-      else await humanTurn(P(state.turn));
+      if(cur.bankrupt){/* skip */}
+      else if(cur.ai)await aiTurn(cur);
+      else await humanTurn(cur);
     }catch(err){
       console.error(err);
       log('⚠️ Internal error ('+((err&&err.message)||err)+') — turn skipped, game continues.','g');
       closeModal();status('');
     }
     if(gen!==gameGen||state.over)break;
-    state.turn=state.turn===0?1:0;
+    let n=state.turn,guard=8;
+    do{n=(n+1)%state.players.length;}while(P(n).bankrupt&&guard-->0);
+    state.turn=n;
     state.turnCount++;
     state.phase='pre';
     state.pendingRoll=null;
@@ -1606,7 +1664,7 @@ const PEERCFG={config:{iceServers:[
 ]}};
 function copyText(t){
   if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).catch(()=>fallbackCopy(t));}
-  else fallbackCopy(t); // file:// has no clipboard API — use the old-school way
+  else fallbackCopy(t);
 }
 function fallbackCopy(t){
   const ta=document.createElement('textarea');
@@ -1615,37 +1673,44 @@ function fallbackCopy(t){
   try{document.execCommand('copy');}catch(e){}
   ta.remove();
 }
-function hostOnData(msg){
+function hostOnData(msg,seat){
   if(!msg||typeof msg!=='object')return;
-  if(msg.t==='res'){const f=NET.pending[msg.id];delete NET.pending[msg.id];if(f)f(msg.v);}
-  else if(msg.t==='mact'){
-    if(NET.manageSession&&NET.manageSession.seat===1)applyManageAct(1,String(msg.a),+msg.i,NET.manageSession.debt);
+  if(msg.t==='res'){
+    const p=NET.pending[msg.id];
+    if(p&&p.seat===seat){delete NET.pending[msg.id];try{p.res(msg.v);}catch(e){}}
   }
-  else if(msg.t==='bye'){opponentLeft();}
+  else if(msg.t==='mact'){
+    if(NET.manageSession&&NET.manageSession.seat===seat)applyManageAct(seat,String(msg.a),+msg.i,NET.manageSession.debt);
+  }
 }
 function guestOnData(msg){
   if(!msg||typeof msg!=='object')return;
   switch(msg.t){
     case 'ver': NET.gotVer=true; break;
+    case 'seat': NET.seat=+msg.seat||1; break;
     case 'badver': versionMismatch(GAME_VERSION,+msg.hostV||1); break;
+    case 'full': showModal('<h2>Room full</h2><p style="color:#aeb9c6">That table already has its maximum number of players.</p><div class="mbtns"><button class="abtn primary" id="fok">Back to Menu</button></div>');$('fok').onclick=()=>{closeModal();teardownNet();startScreen();};break;
+    case 'lobby': status('In the lobby — '+msg.n+'/'+msg.max+' players. Waiting for the host to start…'); break;
     case 'state':
-      if(!NET.gotVer){versionMismatch(GAME_VERSION,1);return;} // pre-versioning host started a game without the handshake
+      if(!NET.gotVer){versionMismatch(GAME_VERSION,1);return;}
       {
-        const prevCash=state?state.players[NET.seat].cash:null;
+        const prevCash=(state&&state.players[NET.seat])?state.players[NET.seat].cash:null;
         state=msg.s;
-        if(prevCash!==null&&state.players[NET.seat].cash>prevCash)sfx('cash');
-        else if(prevCash!==null&&state.players[NET.seat].cash<prevCash)sfx('pay');
+        if(prevCash!==null&&state.players[NET.seat]){
+          const now=state.players[NET.seat].cash;
+          if(now>prevCash)sfx('cash'); else if(now<prevCash)sfx('pay');
+        }
       }
       refresh();
       if(NET.manageRerender)NET.manageRerender();
-      if(!NET.activeReq&&!state.over)status(state.turn===NET.seat?'':'Waiting for '+P(0).name+'…');
+      if(!NET.activeReq&&!state.over)status(state.turn===NET.seat?'':'Waiting for '+P(state.turn).name+'…');
       break;
     case 'log': appendLog(msg.m,msg.c); break;
     case 'dice': guestDice(msg); break;
     case 'card': guestCard(msg); break;
     case 'req': handleReq(msg); break;
-    case 'over': if(state){state.over=true;refresh();gameOverModal(msg.w,P(msg.w===0?1:0).name);} break;
-    case 'bye': opponentLeft(); break;
+    case 'over': if(state){state.over=true;refresh();gameOverModal(+msg.w,'The runner-up');} break;
+    case 'bye': hostLeft(); break;
   }
 }
 async function handleReq(msg){
@@ -1656,103 +1721,139 @@ async function handleReq(msg){
     if(msg.k==='buttons')v=await uiButtons(msg.opts);
     else if(msg.k==='bid')v=await openBid(NET.seat,msg.i,msg.bid,msg.leader);
     else if(msg.k==='manage')v=await openManage(NET.seat,msg.debt);
-    else if(msg.k==='tradeCompose')v=await openTradeCompose(NET.seat);
+    else if(msg.k==='tradeCompose')v=await openTradeCompose(NET.seat,+msg.other);
     else if(msg.k==='tradeDecide')v=await openTradeDecide(NET.seat,msg.offer,msg.proposerName);
   }catch(e){console.error(e);}
   NET.activeReq=false;
   status(state&&!state.over?'Waiting…':'');
-  netSend({t:'res',id:msg.id,v:v===undefined?null:v});
+  guestSend({t:'res',id:msg.id,v:v===undefined?null:v});
 }
 function versionMismatch(mine,theirs){
-  setTimeout(()=>teardownNet(),600); // give the badver message time to leave first
+  setTimeout(()=>teardownNet(),600);
   const iAmOld=mine<theirs;
   showModal(
     '<h2>⚠️ Version mismatch</h2>'+
-    '<p style="color:#aeb9c6">You are running <b>v'+mine+'</b> but your opponent has <b>v'+theirs+'</b>. Both players need the same version to play.</p>'+
+    '<p style="color:#aeb9c6">You are running <b>v'+mine+'</b> but the host has <b>v'+theirs+'</b>. All players need the same version.</p>'+
     '<p style="color:#aeb9c6;margin-top:8px">'+(iAmOld
       ?'<b>Your copy is the older one.</b> Hard-refresh this page (Cmd/Ctrl + Shift + R) or re-download the file, then try again.'
-      :'<b>Your opponent’s copy is the older one.</b> Ask them to hard-refresh (Cmd/Ctrl + Shift + R) or re-download the file, then try again.')+'</p>'+
+      :'<b>The other copy is the older one.</b> Ask them to hard-refresh (Cmd/Ctrl + Shift + R) or re-download, then try again.')+'</p>'+
     '<div class="mbtns"><button class="abtn primary" id="vmok">Back to Menu</button></div>'
   );
   $('vmok').onclick=()=>{closeModal();startScreen();};
 }
-function opponentLeft(){
+function hostLeft(){
   const wasActive=state&&!state.over;
   teardownNet();
   if(wasActive){
     state.over=true;refresh();$('actions').innerHTML='';status('');
-    showModal('<h2>🔌 Opponent disconnected</h2><p style="color:#aeb9c6">The other player left the game.</p>'+
+    showModal('<h2>🔌 Host disconnected</h2><p style="color:#aeb9c6">The host’s browser runs the game, so this match is over.</p>'+
       '<div class="mbtns"><button class="abtn primary" id="backmenu">Back to Menu</button></div>');
     $('backmenu').onclick=()=>{closeModal();startScreen();};
   }
 }
-function watchConn(c){
-  c.on('close',()=>{if(NET.conn===c)opponentLeft();});
-  c.on('error',e=>{console.error(e);});
+async function forfeit(seat){
+  if(!state||state.over)return;
+  const pl=P(seat);
+  if(!pl||pl.bankrupt)return;
+  log('🔌 '+pl.name+' disconnected — they forfeit.','g');
+  pl.bankrupt=true; // pre-mark so their turn logic bails the moment we unblock it
+  resolvePendingFor(seat);
+  delete NET.conns[seat];
+  pl.bankrupt=false; // bankrupt() below handles the full liquidation exactly once
+  await bankrupt(pl,null);
 }
-function beginHostedGame(guestName,guestToken){
-  let gt=TOKENS.includes(guestToken)?guestToken:TOKENS[1];
-  if(gt===NET.hostToken)gt=TOKENS.find(t=>t!==NET.hostToken);
-  state=freshState(NET.hostToken,gt);
-  state.players[0].name=NET.hostName;state.players[0].ai=false;
-  state.players[1].name=guestName;state.players[1].ai=false;
-  netSend({t:'ver',v:GAME_VERSION}); // guests refuse game data that isn't preceded by a version confirmation
+/* ---- hosting ---- */
+function lobbyModal(code){
+  const joined=NET.lobby.map(g=>'<div class="lobbyrow">'+(TOKENS.includes(g.token)?g.token:'❔')+' <b>'+g.name+'</b></div>').join('');
+  const n=NET.lobby.length+1;
+  const m=showModal(
+    '<h2>🌐 Hosting — waiting for players</h2>'+
+    '<p style="color:#aeb9c6">Friends open this same page, choose “Join online game”, and enter:</p>'+
+    '<div class="codebig" id="roomcode" title="Click to copy">'+code+'</div>'+
+    '<div class="lobbyrow">'+NET.hostToken+' <b>'+NET.hostName+'</b> <span style="color:#93a0ae">(host)</span></div>'+joined+
+    '<p id="hostwait" style="color:#c8b45a;text-align:center;margin-top:8px">'+n+'/'+NET.maxPlayers+' players'+(NET.lobby.length?'':' — waiting…')+'</p>'+
+    '<div class="mbtns" style="justify-content:center">'+
+    '<button class="abtn" id="copycode">📋 Copy code</button>'+
+    '<button class="abtn primary" id="startgame" '+(NET.lobby.length>=1?'':'disabled')+'>Start with '+n+' player'+(n>1?'s':'')+'</button>'+
+    '<button class="abtn danger" id="hostcancel">Cancel</button></div>'
+  );
+  const flash=()=>{const b=m.querySelector('#copycode');if(b){b.textContent='✅ Copied!';setTimeout(()=>{const bb=m.querySelector('#copycode');if(bb)bb.textContent='📋 Copy code';},1500);}};
+  m.querySelector('#copycode').onclick=()=>{copyText(code);flash();};
+  m.querySelector('#roomcode').onclick=()=>{copyText(code);flash();};
+  m.querySelector('#hostcancel').onclick=()=>{teardownNet();closeModal();startScreen();};
+  m.querySelector('#startgame').onclick=()=>{if(NET.lobby.length>=1)beginHostedGame();};
+}
+function lobbyChanged(code){
+  if(NET.awaitingHello)lobbyModal(code);
+  hostBroadcast({t:'lobby',n:NET.lobby.length+1,max:NET.maxPlayers});
+  if(NET.lobby.length>=NET.maxPlayers-1)beginHostedGame();
+}
+function beginHostedGame(){
+  if(!NET.awaitingHello)return;
+  NET.awaitingHello=false;
+  const used=[NET.hostToken];
+  const spec=[{name:NET.hostName,token:NET.hostToken,ai:false}];
+  NET.lobby.forEach((g,k)=>{
+    let t=(TOKENS.includes(g.token)&&!used.includes(g.token))?g.token:TOKENS.find(x=>!used.includes(x));
+    used.push(t);
+    g.seat=k+1;
+    NET.conns[k+1]=g.conn;
+    spec.push({name:g.name,token:t,ai:false});
+  });
+  NET.lobby.forEach(g=>hostSendTo(g.seat,{t:'seat',seat:g.seat}));
+  state=freshState(spec);
   closeModal();
   $('log').innerHTML='';
-  log('— Online game! '+NET.hostName+' '+NET.hostToken+' vs '+guestName+' '+gt+'. '+NET.hostName+' goes first. —','g');
+  log('— Online game! '+spec.map(s=>s.token+' '+s.name).join(' vs ')+'. '+NET.hostName+' goes first. —','g');
   refresh();
   gameLoop();
 }
-function hostGame(name,token){
-  NET.mode='host';NET.seat=0;NET.hostName=name;NET.hostToken=token;
-  NET.awaitingHello=true;
+function hostGame(name,token,maxPlayers){
+  NET.mode='host';NET.seat=0;NET.hostName=name;NET.hostToken=token;NET.maxPlayers=maxPlayers;
+  NET.awaitingHello=true;NET.lobby=[];NET.conns={};
   const code=randCode(5);
   const peer=new Peer(ROOMPREFIX+code,PEERCFG);
   NET.peer=peer;
-  const m=showModal(
-    '<h2>🌐 Hosting a game</h2>'+
-    '<p style="color:#aeb9c6">Share this room code with your friend. They open this same page, choose “Join online game”, and enter it.</p>'+
-    '<div class="codebig" id="roomcode" title="Click to copy">…</div>'+
-    '<p id="hostwait" style="color:#c8b45a;text-align:center">Connecting to matchmaking…</p>'+
-    '<div class="mbtns" style="justify-content:center"><button class="abtn" id="copycode">📋 Copy code</button><button class="abtn danger" id="hostcancel">Cancel</button></div>'
-  );
-  const flashCopied=()=>{
-    const b=m.querySelector('#copycode');
-    if(!b)return;
-    b.textContent='✅ Copied!';
-    setTimeout(()=>{const bb=m.querySelector('#copycode');if(bb)bb.textContent='📋 Copy code';},1500);
-  };
-  m.querySelector('#copycode').onclick=()=>{copyText(code);flashCopied();};
-  m.querySelector('#roomcode').onclick=()=>{copyText(code);flashCopied();};
-  m.querySelector('#hostcancel').onclick=()=>{teardownNet();closeModal();startScreen();};
-  peer.on('open',()=>{
-    const rc=$('roomcode');if(rc)rc.textContent=code;
-    const hw=$('hostwait');if(hw)hw.textContent='Waiting for your friend to join…';
-  });
+  lobbyModal(code);
+  const hw=()=>$('hostwait');
+  peer.on('open',()=>{if(hw())hw().textContent=(NET.lobby.length+1)+'/'+NET.maxPlayers+' players — waiting…';});
   peer.on('disconnected',()=>{try{peer.reconnect();}catch(e){}});
   peer.on('error',e=>{
-    if(String(e.type)==='unavailable-id'){teardownNet();hostGame(name,token);return;}
-    const hw=$('hostwait');if(hw)hw.textContent='Connection error: '+e.type+'. Check your internet and try again.';
+    if(String(e.type)==='unavailable-id'){teardownNet();hostGame(name,token,maxPlayers);return;}
+    if(hw())hw().textContent='Connection error: '+e.type+'. Check your internet and try again.';
   });
   peer.on('connection',c=>{
-    if(NET.conn){try{c.close();}catch(e){}return;} // 1v1 only
-    NET.conn=c;
-    const hw=$('hostwait');if(hw)hw.textContent='Friend found — opening game channel…';
-    watchConn(c);
+    if(!NET.awaitingHello){try{c.close();}catch(e){}return;} // game already started
+    if(NET.lobby.length>=NET.maxPlayers-1){try{c.send({t:'full'});}catch(e){}setTimeout(()=>{try{c.close();}catch(e){}},400);return;}
+    const guest={conn:c,name:null,token:null,seat:null};
     c.on('data',msg=>{
-      if(msg&&msg.t==='hello'&&NET.awaitingHello){
-        const guestV=+msg.v||1;
-        if(guestV!==GAME_VERSION){
-          netSend({t:'badver',hostV:GAME_VERSION});
-          versionMismatch(GAME_VERSION,guestV);
+      if(msg&&msg.t==='hello'&&guest.name===null){
+        const v=+msg.v||1;
+        if(v!==GAME_VERSION){
+          try{c.send({t:'badver',hostV:GAME_VERSION});}catch(e){}
+          log('⚠️ A player tried to join with an outdated copy (v'+v+') — asked them to update.','g');
+          setTimeout(()=>{try{c.close();}catch(e){}},600);
           return;
         }
-        NET.awaitingHello=false;
-        beginHostedGame(String(msg.name||'Friend').slice(0,20)||'Friend',msg.token);
-      }else hostOnData(msg);
+        guest.name=String(msg.name||'Friend').slice(0,20)||'Friend';
+        guest.token=msg.token;
+        NET.lobby.push(guest);
+        try{c.send({t:'ver',v:GAME_VERSION});}catch(e){}
+        lobbyChanged(code);
+      }else if(guest.seat!=null)hostOnData(msg,guest.seat);
+      else if(msg&&msg.t==='bye'){try{c.close();}catch(e){}}
     });
+    c.on('close',()=>{
+      if(guest.seat!=null)forfeit(guest.seat);
+      else{
+        const ix=NET.lobby.indexOf(guest);
+        if(ix>=0){NET.lobby.splice(ix,1);if(NET.awaitingHello)lobbyChanged(code);}
+      }
+    });
+    c.on('error',e=>console.error(e));
   });
 }
+/* ---- joining ---- */
 function joinGame(name,code,token){
   NET.mode='guest';NET.seat=1;
   const m=showModal(
@@ -1768,21 +1869,23 @@ function joinGame(name,code,token){
     const el=$('joinwait');
     if(el)el.textContent='Found matchmaking — knocking on room '+code+'…';
     const c=peer.connect(ROOMPREFIX+code,{reliable:true});
-    NET.conn=c;
-    watchConn(c);
+    NET.conns[0]=c;
     c.on('open',()=>{
       opened=true;
       $('log').innerHTML='';
-      appendLog('— Connected! Waiting for the host to start… —','g');
+      appendLog('— Connected! Waiting in the lobby… —','g');
       closeModal();
+      status('In the lobby — waiting for the host to start…');
       c.send({t:'hello',name:name,token:token,v:GAME_VERSION});
     });
     c.on('data',guestOnData);
+    c.on('close',()=>hostLeft());
+    c.on('error',e=>console.error(e));
   });
   peer.on('disconnected',()=>{try{peer.reconnect();}catch(e){}});
   peer.on('error',e=>{
     const el=$('joinwait');
-    if(el)el.textContent=String(e.type)==='peer-unavailable'?'Room "'+code+'" not found. Double-check the code (and that your friend is still on the waiting screen).':'Connection error: '+e.type+'.';
+    if(el)el.textContent=String(e.type)==='peer-unavailable'?'Room "'+code+'" not found. Double-check the code (and that your friend is still on the lobby screen).':'Connection error: '+e.type+'.';
   });
   setTimeout(()=>{
     if(!opened&&NET.mode==='guest'&&$('joinwait'))
@@ -1790,8 +1893,6 @@ function joinGame(name,code,token){
   },12000);
 }
 /* ================= START ================= */
-// downloads the game as a single file — from itself when served over http(s),
-// or from the canonical site when running as a local file (so stale copies can fetch updates)
 async function downloadCopy(src,ver){
   try{
     const url=src||(location.protocol.indexOf('http')===0?location.href.split('#')[0].split('?')[0]:SITE);
@@ -1819,32 +1920,32 @@ function wireTokenPicker(m){
   });
   return ()=>sel;
 }
+function countPickerHTML(id,labels,def){
+  return '<div class="tokpick small" style="justify-content:center" id="'+id+'">'+labels.map((l,i)=>'<button data-n="'+(i)+'" class="'+(i===def?'sel':'')+'">'+l+'</button>').join('')+'</div>';
+}
+function wireCountPicker(m,id,def){
+  let sel=def;
+  m.querySelectorAll('#'+id+' [data-n]').forEach(b=>{
+    b.onclick=()=>{m.querySelectorAll('#'+id+' [data-n]').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');sel=+b.dataset.n;};
+  });
+  return ()=>sel;
+}
 function startScreen(){
   teardownNet();
   const saved=loadSave();
   let resume='';
   if(saved&&!saved.over){
-    resume='<button class="bigbtn" id="resume">▶ Resume saved solo game<small>Turn '+(saved.turnCount+1)+' vs Claude</small></button>';
+    resume='<button class="bigbtn" id="resume">▶ Resume saved solo game<small>Turn '+(saved.turnCount+1)+' · '+saved.players.map(p=>p.name).join(' vs ')+'</small></button>';
   }
   const m=showModal(
-    '<h2 style="text-align:center">🎩 MONOPOLY — 1v1 🎲</h2>'+
-    '<p style="text-align:center;color:#aeb9c6;margin:6px 0 16px">Full classic rules. $1,500 each. Last player standing wins.</p>'+
+    '<h2 style="text-align:center">🎩 MONOPOLY 🎲</h2>'+
+    '<p style="text-align:center;color:#aeb9c6;margin:6px 0 16px">Full classic rules · 2–4 players · $1,500 each · last one standing wins.</p>'+
     resume+
-    '<button class="bigbtn" id="msolo">🤖 Play vs Claude<small>Offline, instant, he talks trash</small></button>'+
-    '<button class="bigbtn" id="mhost">🌐 Host online game<small>Get a room code to send a friend (needs internet)</small></button>'+
+    '<button class="bigbtn" id="msolo">🤖 Play vs Claude bots<small>Offline · face 1, 2 or 3 bots — they trade with each other too</small></button>'+
+    '<button class="bigbtn" id="mhost">🌐 Host online game<small>Get a room code — up to 3 friends can join (needs internet)</small></button>'+
     '<button class="bigbtn" id="mjoin">🔗 Join online game<small>Enter a friend’s room code</small></button>'+
-    '<button class="bigbtn" id="minstall" style="display:'+(deferredInstall?'block':'none')+'">📥 Install as an app<small>Adds Monopoly to your dock / start menu — launches offline, updates itself</small></button>'+
     '<button class="bigbtn" id="mdl">⬇️ Download offline copy<small>One file (v'+GAME_VERSION+') — share it with friends or play with no internet</small></button>'
   );
-  const dl=m.querySelector('#mdl');
-  if(dl)dl.onclick=()=>downloadCopy();
-  const inst=m.querySelector('#minstall');
-  if(inst)inst.onclick=async()=>{
-    if(!deferredInstall)return;
-    deferredInstall.prompt();
-    try{await deferredInstall.userChoice;}catch(e){}
-    deferredInstall=null;inst.style.display='none';
-  };
   if(saved&&!saved.over){
     m.querySelector('#resume').onclick=()=>{
       state=saved;closeModal();
@@ -1852,20 +1953,26 @@ function startScreen(){
       refresh();gameLoop();
     };
   }
+  m.querySelector('#mdl').onclick=()=>downloadCopy();
   m.querySelector('#msolo').onclick=()=>{
-    const mm=showModal('<h2 style="text-align:center">Choose your token</h2>'+tokenPickerHTML()+
+    const mm=showModal('<h2 style="text-align:center">🤖 You vs the bots</h2>'+
+      '<h3 style="text-align:center">Your token</h3>'+tokenPickerHTML()+
+      '<h3 style="text-align:center">Opponents</h3>'+countPickerHTML('botcount',['1 bot','2 bots','3 bots'],0)+
       '<div class="mbtns" style="justify-content:center"><button class="abtn primary" id="gosolo">Start Game</button><button class="abtn" id="back">Back</button></div>');
     const getTok=wireTokenPicker(mm);
+    const getBots=wireCountPicker(mm,'botcount',0);
     mm.querySelector('#back').onclick=()=>startScreen();
     mm.querySelector('#gosolo').onclick=()=>{
       const ht=getTok();
-      const rest=TOKENS.filter(t=>t!==ht);
-      const at=rest[Math.floor(Math.random()*rest.length)];
-      state=freshState(ht,at);
+      const nBots=getBots()+1;
+      const rest=shuffle(TOKENS.filter(t=>t!==ht));
+      const spec=[{name:'You',token:ht,ai:false}];
+      for(let k=0;k<nBots;k++)spec.push({name:AINAMES[k],token:rest[k],ai:true});
+      state=freshState(spec);
       closeModal();
       $('log').innerHTML='';
-      log('— New game! You are '+ht+', Claude is '+at+'. —','g');
-      quip("I call "+at+". It matches my eyes. Good luck — you'll need it. 😏");
+      log('— New game! '+spec.map(s=>s.token+' '+s.name).join(' vs ')+' —','g');
+      quip(P(1),"I call "+rest[0]+". It matches my eyes. Good luck — you'll need it. 😏");
       refresh();save();gameLoop();
     };
   };
@@ -1873,13 +1980,15 @@ function startScreen(){
     if(typeof Peer==='undefined'){alert('Online play needs an internet connection (the networking library could not load).');return;}
     const mm=showModal('<h2 style="text-align:center">🌐 Host a game</h2>'+
       '<input class="namein" id="pname" maxlength="20" placeholder="Your name" value="Player 1">'+
-      tokenPickerHTML()+
+      '<h3 style="text-align:center">Your token</h3>'+tokenPickerHTML()+
+      '<h3 style="text-align:center">Table size</h3>'+countPickerHTML('tablesize',['2 players','3 players','4 players'],0)+
       '<div class="mbtns" style="justify-content:center"><button class="abtn primary" id="gohost">Create Room</button><button class="abtn" id="back">Back</button></div>');
     const getTok=wireTokenPicker(mm);
+    const getSize=wireCountPicker(mm,'tablesize',0);
     mm.querySelector('#back').onclick=()=>startScreen();
     mm.querySelector('#gohost').onclick=()=>{
       const name=(mm.querySelector('#pname').value.trim()||'Player 1').slice(0,20);
-      hostGame(name,getTok());
+      hostGame(name,getTok(),getSize()+2);
     };
   };
   m.querySelector('#mjoin').onclick=()=>{
@@ -1904,8 +2013,8 @@ function rulesModal(){
   const m=showModal(
     '<h2>📜 House Rules (Official Classic)</h2>'+
     '<ul style="color:#c6cdd6;font-size:13px;line-height:1.7;padding-left:20px">'+
-    '<li>$1,500 starting cash · $200 for passing GO</li>'+
-    '<li>Declined properties go to <b>auction</b> (official rule!)</li>'+
+    '<li>2–4 players · $1,500 starting cash · $200 for passing GO</li>'+
+    '<li>Declined properties go to <b>auction</b> among all players (official rule!)</li>'+
     '<li>Unimproved rent <b>doubles</b> with a full color set</li>'+
     '<li>Houses build/sell <b>evenly</b> across a set · sell-back at half price</li>'+
     '<li>Bank stock limited: <b>32 houses / 12 hotels</b> — shortages matter</li>'+
@@ -1913,9 +2022,9 @@ function rulesModal(){
     '<li>Jail: pay $50, roll doubles (3 tries), or use a card</li>'+
     '<li>3 doubles in a row = straight to jail</li>'+
     '<li>Income Tax $200 flat · Luxury Tax $100 · Free Parking pays nothing</li>'+
-    '<li>Trade properties, cash & Get Out of Jail Free cards on your turn (no buildings in traded groups)</li>'+
-    '<li>Online: host shares a room code; the host’s browser runs the game, so the host should keep their tab open</li>'+
-    '<li>Bankruptcy ends the game — click any space or deed chip for details</li>'+
+    '<li>Trade properties, cash & jail cards with any player on your turn</li>'+
+    '<li>Bankruptcy hands your assets to the creditor (buildings liquidate to cash) — last player standing wins</li>'+
+    '<li>Online: the host’s browser runs the game — the host should keep their tab open; a disconnected player forfeits</li>'+
     '</ul>'+
     '<div class="mbtns"><button class="abtn" id="rclose">Close</button></div>'
   );
@@ -1925,7 +2034,7 @@ $('btn-new').onclick=()=>{
   if(state&&!state.over){
     if(!confirm(online()?'Leave the online game and return to the menu?':'Abandon the current game and start over?'))return;
   }
-  if(online())netSend({t:'bye'});
+  if(online()){if(NET.mode==='guest')guestSend({t:'bye'});}
   if(NET.mode==='solo')clearSave();
   startScreen();
 };
@@ -1933,13 +2042,6 @@ $('btn-rules').onclick=rulesModal;
 $('ver').textContent='v'+GAME_VERSION;
 /* ================= APP INSTALL & AUTO-UPDATE ================= */
 const SITE='https://35packof5gum.github.io/monopoly/';
-let deferredInstall=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();
-  deferredInstall=e;
-  const b=$('minstall');
-  if(b)b.style.display='block';
-});
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
@@ -1962,7 +2064,7 @@ function showUpdateBar(remoteV){
         if(reg){
           reg.update();
           navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload());
-          setTimeout(()=>location.reload(),4000); // fallback if no SW takeover event
+          setTimeout(()=>location.reload(),4000);
         }else location.reload();
       }catch(e){location.reload();}
     }
@@ -1974,7 +2076,7 @@ async function checkForUpdate(){
     if(!r.ok)return;
     const j=await r.json();
     if(+j.v>GAME_VERSION)showUpdateBar(+j.v);
-  }catch(e){} // offline — check again later
+  }catch(e){}
 }
 checkForUpdate();
 setInterval(checkForUpdate,10*60*1000);

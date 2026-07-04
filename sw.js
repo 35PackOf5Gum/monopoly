@@ -1,7 +1,7 @@
 // Service worker: precaches the app so the installed version launches offline,
 // and swaps caches atomically when a new version deploys.
 // Keep GAME_VERSION here in sync with index.html — bumping it is what triggers the update.
-const GAME_VERSION = 3;
+const GAME_VERSION = 4;
 const CACHE = 'monopoly-v' + GAME_VERSION;
 const ASSETS = [
   './',
