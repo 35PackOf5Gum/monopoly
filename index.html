@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0d1015">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
 <title>Monopoly — 1v1</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js" defer></script>
 <style>
@@ -148,6 +152,15 @@ aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:
 .abtn.danger{background:#7a2b22; border-color:#a53b2e;}
 .abtn.danger:hover{background:#93362a;}
 #status{font-size:13px; color:#c8b45a; min-height:18px; font-style:italic;}
+#updatebar{
+  display:none; background:#4a3d10; border-bottom:1px solid #8a7420; color:#ffe08a;
+  padding:8px 16px; font-size:13px; flex:0 0 auto;
+}
+#updatebar button{
+  background:#8a7420; color:#fff; border:none; border-radius:6px;
+  padding:4px 12px; cursor:pointer; font-weight:700; margin-left:8px; font-size:13px;
+}
+#updatebar button:hover{background:#a58a26;}
 #log{
   flex:1; background:#0e1319; border:1px solid #2c3644; border-radius:10px;
   padding:10px; overflow-y:auto; font-size:12.5px; line-height:1.55; min-height:80px;
@@ -226,6 +239,7 @@ aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:
   <button id="btn-rules">Rules</button>
   <button id="btn-new">New Game</button>
 </header>
+<div id="updatebar"></div>
 <main>
   <div id="boardwrap"><div id="board"></div></div>
   <aside>
@@ -1776,19 +1790,23 @@ function joinGame(name,code,token){
   },12000);
 }
 /* ================= START ================= */
-// the page downloads itself, so the saved file is always exactly the version you're running
-async function downloadCopy(){
+// downloads the game as a single file — from itself when served over http(s),
+// or from the canonical site when running as a local file (so stale copies can fetch updates)
+async function downloadCopy(src,ver){
   try{
-    const res=await fetch(location.href.split('#')[0].split('?')[0],{cache:'no-cache'});
+    const url=src||(location.protocol.indexOf('http')===0?location.href.split('#')[0].split('?')[0]:SITE);
+    const res=await fetch(url,{cache:'no-store'});
     if(!res.ok)throw new Error(res.status);
     const blob=new Blob([await res.text()],{type:'text/html'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download='monopoly-1v1-v'+GAME_VERSION+'.html';
+    a.download='monopoly-1v1-v'+(ver||GAME_VERSION)+'.html';
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+    return true;
   }catch(e){
-    alert('Could not download a copy — if you opened this as a local file, you already have it!');
+    alert('Could not download a copy — check your internet connection.');
+    return false;
   }
 }
 function tokenPickerHTML(){
@@ -1815,10 +1833,18 @@ function startScreen(){
     '<button class="bigbtn" id="msolo">🤖 Play vs Claude<small>Offline, instant, he talks trash</small></button>'+
     '<button class="bigbtn" id="mhost">🌐 Host online game<small>Get a room code to send a friend (needs internet)</small></button>'+
     '<button class="bigbtn" id="mjoin">🔗 Join online game<small>Enter a friend’s room code</small></button>'+
-    (location.protocol.indexOf('http')===0?'<button class="bigbtn" id="mdl">⬇️ Download offline copy<small>One file (v'+GAME_VERSION+') — share it with friends or play with no internet</small></button>':'')
+    '<button class="bigbtn" id="minstall" style="display:'+(deferredInstall?'block':'none')+'">📥 Install as an app<small>Adds Monopoly to your dock / start menu — launches offline, updates itself</small></button>'+
+    '<button class="bigbtn" id="mdl">⬇️ Download offline copy<small>One file (v'+GAME_VERSION+') — share it with friends or play with no internet</small></button>'
   );
   const dl=m.querySelector('#mdl');
-  if(dl)dl.onclick=downloadCopy;
+  if(dl)dl.onclick=()=>downloadCopy();
+  const inst=m.querySelector('#minstall');
+  if(inst)inst.onclick=async()=>{
+    if(!deferredInstall)return;
+    deferredInstall.prompt();
+    try{await deferredInstall.userChoice;}catch(e){}
+    deferredInstall=null;inst.style.display='none';
+  };
   if(saved&&!saved.over){
     m.querySelector('#resume').onclick=()=>{
       state=saved;closeModal();
@@ -1905,6 +1931,53 @@ $('btn-new').onclick=()=>{
 };
 $('btn-rules').onclick=rulesModal;
 $('ver').textContent='v'+GAME_VERSION;
+/* ================= APP INSTALL & AUTO-UPDATE ================= */
+const SITE='https://35packof5gum.github.io/monopoly/';
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredInstall=e;
+  const b=$('minstall');
+  if(b)b.style.display='block';
+});
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+function showUpdateBar(remoteV){
+  const bar=$('updatebar');
+  if(bar.dataset.v===String(remoteV))return;
+  bar.dataset.v=String(remoteV);
+  const isFile=location.protocol==='file:';
+  bar.innerHTML='⬆️ Version '+remoteV+' is out (you have v'+GAME_VERSION+') —'+
+    '<button id="updgo">'+(isFile?'Download new file':'Update now')+'</button>';
+  bar.style.display='block';
+  $('updgo').onclick=async()=>{
+    if(isFile){
+      const ok=await downloadCopy(SITE,remoteV);
+      if(ok)bar.innerHTML='✅ v'+remoteV+' downloaded — open the new file and delete this old copy.';
+    }else{
+      bar.textContent='Updating…';
+      try{
+        const reg=await navigator.serviceWorker.getRegistration();
+        if(reg){
+          reg.update();
+          navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload());
+          setTimeout(()=>location.reload(),4000); // fallback if no SW takeover event
+        }else location.reload();
+      }catch(e){location.reload();}
+    }
+  };
+}
+async function checkForUpdate(){
+  try{
+    const r=await fetch(SITE+'version.json?ts='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const j=await r.json();
+    if(+j.v>GAME_VERSION)showUpdateBar(+j.v);
+  }catch(e){} // offline — check again later
+}
+checkForUpdate();
+setInterval(checkForUpdate,10*60*1000);
 $('btn-snd').textContent=SND.enabled?'🔊':'🔇';
 $('btn-snd').onclick=()=>{
   SND.enabled=!SND.enabled;
