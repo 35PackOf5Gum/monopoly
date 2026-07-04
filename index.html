@@ -405,11 +405,36 @@ function resolvePendingFor(seat){
 function isLocalSeat(pid){return pid===NET.seat;}
 function online(){return NET.mode!=='solo';}
 function teardownNet(){
+  stopHeartbeat();
   for(const k in NET.conns){try{NET.conns[k].close();}catch(e){}}
   try{if(NET.peer)NET.peer.destroy();}catch(e){}
   NET.mode='solo';NET.seat=0;NET.peer=null;NET.conns={};NET.lobby=[];NET.pending={};
   NET.manageSession=null;NET.manageRerender=null;NET.activeReq=false;NET.awaitingHello=false;NET.gotVer=false;
 }
+/* heartbeat: peers exchange pings so a silently-dead connection (sleeping laptop,
+   backgrounded phone) is detected within ~1 minute instead of hanging the game.
+   The 70s timeout tolerates browsers throttling background-tab timers to 1/min. */
+const HB_INTERVAL=5000, HB_TIMEOUT=70000;
+function startHeartbeat(){
+  stopHeartbeat();
+  NET.hbTimer=setInterval(()=>{
+    if(!state||state.over)return;
+    const now=Date.now();
+    if(NET.mode==='host'){
+      hostBroadcast({t:'hb'});
+      for(const k in NET.conns){
+        const c=NET.conns[k];
+        if(!c)continue;
+        if(!c._lastSeen)c._lastSeen=now;
+        if(now-c._lastSeen>HB_TIMEOUT){try{c.close();}catch(e){}} // close triggers the forfeit flow
+      }
+    }else if(NET.mode==='guest'){
+      guestSend({t:'hb'});
+      if(NET.lastHostMsg&&now-NET.lastHostMsg>HB_TIMEOUT)hostLeft();
+    }
+  },HB_INTERVAL);
+}
+function stopHeartbeat(){if(NET.hbTimer){clearInterval(NET.hbTimer);NET.hbTimer=null;}}
 /* ================= STATE ================= */
 let state=null;
 function P(i){return state.players[i];}
@@ -1685,6 +1710,7 @@ function hostOnData(msg,seat){
 }
 function guestOnData(msg){
   if(!msg||typeof msg!=='object')return;
+  NET.lastHostMsg=Date.now();
   switch(msg.t){
     case 'ver': NET.gotVer=true; break;
     case 'seat': NET.seat=+msg.seat||1; break;
@@ -1800,6 +1826,7 @@ function beginHostedGame(){
   });
   NET.lobby.forEach(g=>hostSendTo(g.seat,{t:'seat',seat:g.seat}));
   state=freshState(spec);
+  startHeartbeat();
   closeModal();
   $('log').innerHTML='';
   log('— Online game! '+spec.map(s=>s.token+' '+s.name).join(' vs ')+'. '+NET.hostName+' goes first. —','g');
@@ -1825,6 +1852,7 @@ function hostGame(name,token,maxPlayers){
     if(NET.lobby.length>=NET.maxPlayers-1){try{c.send({t:'full'});}catch(e){}setTimeout(()=>{try{c.close();}catch(e){}},400);return;}
     const guest={conn:c,name:null,token:null,seat:null};
     c.on('data',msg=>{
+      c._lastSeen=Date.now();
       if(msg&&msg.t==='hello'&&guest.name===null){
         const v=+msg.v||1;
         if(v!==GAME_VERSION){
@@ -1870,6 +1898,8 @@ function joinGame(name,code,token){
     NET.conns[0]=c;
     c.on('open',()=>{
       opened=true;
+      NET.lastHostMsg=Date.now();
+      startHeartbeat();
       $('log').innerHTML='';
       appendLog('— Connected! Waiting in the lobby… —','g');
       closeModal();
