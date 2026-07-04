@@ -220,8 +220,9 @@ aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:
 <body>
 <header>
   <h1>MONOPOLY</h1>
-  <span class="sub">1v1 · offline vs Claude · online vs a friend</span>
+  <span class="sub">1v1 · offline vs Claude · online vs a friend · <span id="ver"></span></span>
   <span class="spacer"></span>
+  <button id="btn-snd" title="Sound on/off">🔊</button>
   <button id="btn-rules">Rules</button>
   <button id="btn-new">New Game</button>
 </header>
@@ -330,8 +331,36 @@ const QUIPS={
  taunt:["Your move. Choose wisely.","The dice fear me.","I've run the numbers. They favor me.","Statistically speaking, you should worry."]
 };
 const q=a=>a[Math.floor(Math.random()*a.length)];
-const TOKENS=['🎩','🐕','🚗','🐈','⛵','👢'];
+const TOKENS=['🎩','🐕','🐈','🏎️','🚢','⛵','👢','🐎','🦖','🐧','🦆','🛒'];
 const SAVEKEY='monopoly_1v1_save_v1';
+const GAME_VERSION=2; // bump on every release — online play requires both players to match
+/* ================= SOUND ================= */
+const SND={enabled:(function(){try{return localStorage.getItem('mono_snd')!=='off';}catch(e){return true;}})(),ctx:null};
+function tone(f,t0,dur,type,vol){
+  const c=SND.ctx,o=c.createOscillator(),g=c.createGain();
+  o.type=type||'sine';o.frequency.value=f;
+  g.gain.setValueAtTime(vol||.12,c.currentTime+t0);
+  g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+t0+dur);
+  o.connect(g);g.connect(c.destination);
+  o.start(c.currentTime+t0);o.stop(c.currentTime+t0+dur+.02);
+}
+function sfx(name){
+  if(!SND.enabled)return;
+  try{
+    SND.ctx=SND.ctx||new (window.AudioContext||window.webkitAudioContext)();
+    if(SND.ctx.state==='suspended')SND.ctx.resume();
+    switch(name){
+      case 'dice': for(let i=0;i<5;i++)tone(180+Math.random()*220,i*.06,.04,'square',.05); break;
+      case 'cash': tone(660,0,.09,'triangle',.13);tone(880,.09,.12,'triangle',.13); break;
+      case 'pay': tone(440,0,.09,'triangle',.11);tone(300,.09,.14,'triangle',.11); break;
+      case 'card': tone(523,0,.08,'sine',.11);tone(784,.08,.1,'sine',.11); break;
+      case 'build': tone(200,0,.05,'square',.1);tone(200,.08,.05,'square',.1);tone(320,.16,.07,'square',.1); break;
+      case 'jail': tone(150,0,.3,'sawtooth',.09);tone(110,.15,.35,'sawtooth',.09); break;
+      case 'win': [523,659,784,1047].forEach((f,i)=>tone(f,i*.12,.25,'triangle',.13)); break;
+      case 'lose': [400,340,280,220].forEach((f,i)=>tone(f,i*.14,.25,'sawtooth',.07)); break;
+    }
+  }catch(e){}
+}
 /* ================= NET ================= */
 // mode 'solo': everything local, seat 0 = human, seat 1 = Claude AI.
 // mode 'host': this machine runs all game logic; seat 0 = host, seat 1 = remote guest.
@@ -350,7 +379,7 @@ function online(){return NET.mode!=='solo';}
 function teardownNet(){
   try{if(NET.conn)NET.conn.close();}catch(e){}
   try{if(NET.peer)NET.peer.destroy();}catch(e){}
-  NET.mode='solo';NET.seat=0;NET.peer=null;NET.conn=null;NET.pending={};NET.manageSession=null;NET.manageRerender=null;NET.activeReq=false;NET.awaitingHello=false;
+  NET.mode='solo';NET.seat=0;NET.peer=null;NET.conn=null;NET.pending={};NET.manageSession=null;NET.manageRerender=null;NET.activeReq=false;NET.awaitingHello=false;NET.gotVer=false;
 }
 /* ================= STATE ================= */
 let state=null;
@@ -521,6 +550,7 @@ const PIPS={1:[5],2:[1,9],3:[1,5,9],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]};
 function setDie(el,v){[...el.children].forEach((s,i)=>s.style.opacity=PIPS[v].includes(i+1)?1:0);}
 async function rollDice(who){
   const d0=$('die0'),d1=$('die1');
+  sfx('dice');
   if(NET.mode==='host')netSend({t:'dice',rolling:true});
   d0.classList.add('rolling');d1.classList.add('rolling');
   const end=Date.now()+650;
@@ -539,7 +569,7 @@ async function rollDice(who){
 }
 function guestDice(m){
   const d0=$('die0'),d1=$('die1');
-  if(m.rolling){d0.classList.add('rolling');d1.classList.add('rolling');return;}
+  if(m.rolling){sfx('dice');d0.classList.add('rolling');d1.classList.add('rolling');return;}
   d0.classList.remove('rolling');d1.classList.remove('rolling');
   if(m.a){setDie(d0,m.a);setDie(d1,m.b);}
 }
@@ -588,7 +618,7 @@ async function ioTradeDecide(pid,offer,proposerName){
 async function moveSteps(pl,n){
   for(let k=0;k<n;k++){
     pl.pos=(pl.pos+1)%40;
-    if(pl.pos===0){pl.cash+=200;log(pl.name+' passed GO — collect $200.',pl.id);}
+    if(pl.pos===0){pl.cash+=200;sfx('cash');log(pl.name+' passed GO — collect $200.',pl.id);}
     refresh();
     await sleep(120);
   }
@@ -598,6 +628,7 @@ async function moveDirectTo(pl,target){
 }
 async function goToJail(pl){
   pl.pos=10;pl.inJail=true;pl.jailTurns=0;
+  sfx('jail');
   log(pl.name+' — straight to Jail. 🚔',pl.id);
   if(pl.ai)quip(q(QUIPS.jail));
   refresh();
@@ -661,6 +692,7 @@ async function charge(pl,amount,to,what){
   }
   pl.cash-=amount;
   if(to)to.cash+=amount;
+  sfx('pay');
   log(pl.name+' paid '+fmt(amount)+(to?' to '+to.name:'')+'.',pl.id);
   refresh();
   return true;
@@ -689,6 +721,7 @@ async function bankrupt(pl,creditor){
 }
 function gameOverModal(w,loserName){
   const youWon=w===NET.seat;
+  sfx(youWon?'win':'lose');
   const title=youWon?'🏆 YOU WIN!':(NET.mode==='solo'?'🤖 CLAUDE WINS!':'🏆 '+P(w).name.toUpperCase()+' WINS!');
   showModal(
     '<div id="gameover-banner">'+title+'</div>'+
@@ -706,6 +739,7 @@ async function offerProperty(pl,i){
       if(P(1).cash<s.p)aiRaiseFunds(P(1),s.p);
       if(P(1).cash>=s.p){
         P(1).cash-=s.p;pr(i).owner=1;
+        sfx('cash');
         log('Claude bought '+s.n+' for '+fmt(s.p)+'.',1);
         quip(q(QUIPS.buy));
         refresh();return;
@@ -725,6 +759,7 @@ async function offerProperty(pl,i){
     if(c==='manage'){await ioManage(pl.id,0);continue;}
     if(c==='buy'&&pl.cash>=s.p){
       pl.cash-=s.p;pr(i).owner=pl.id;
+      sfx('cash');
       log(pl.name+' bought '+s.n+' for '+fmt(s.p)+'.',pl.id);
       refresh();return;
     }
@@ -774,6 +809,7 @@ async function auction(i){
   if(leader===null){log('No bids — '+s.n+' stays with the bank.','g');return;}
   const w=P(leader);
   w.cash-=bid;pr(i).owner=leader;
+  sfx('cash');
   log(w.name+' won the auction for '+s.n+' at '+fmt(bid)+'!',leader);
   if(NET.mode==='solo'&&leader===1)quip(q(QUIPS.buy));
   refresh();
@@ -812,6 +848,7 @@ async function showCardModal(deckName,card,pl){
   cs.querySelector('.ct').style.color=deckName==='chance'?'#e6640e':'#0072bb';
   cs.querySelector('.cb').textContent=card.t;
   cs.style.display='block';
+  sfx('card');
   if(NET.mode==='host')netSend({t:'card',deck:deckName,text:card.t});
   log(pl.name+' drew '+(deckName==='chance'?'Chance':'Community Chest')+': “'+card.t+'”',pl.id);
   await sleep(1800);
@@ -821,6 +858,7 @@ async function showCardModal(deckName,card,pl){
 function guestCard(m){
   const cs=$('cardshow');
   if(m.hide){cs.style.display='none';return;}
+  sfx('card');
   cs.querySelector('.ct').textContent=m.deck==='chance'?'CHANCE':'COMMUNITY CHEST';
   cs.querySelector('.ct').style.color=m.deck==='chance'?'#e6640e':'#0072bb';
   cs.querySelector('.cb').textContent=m.text;
@@ -981,7 +1019,7 @@ function canUnmortgage(i,pid){
 // host-side (or solo) application of one manage action, with validation
 function applyManageAct(seat,a,i,debt){
   const pl=P(seat),s=B[i],st=pr(i);
-  if(a==='bh'&&!debt&&canBuyHouse(i,seat)){pl.cash-=s.h;st.houses++;log(pl.name+' built a '+(st.houses===5?'hotel':'house')+' on '+s.n+'.',seat);}
+  if(a==='bh'&&!debt&&canBuyHouse(i,seat)){pl.cash-=s.h;st.houses++;sfx('build');log(pl.name+' built a '+(st.houses===5?'hotel':'house')+' on '+s.n+'.',seat);}
   else if(a==='sh'&&canSellHouse(i,seat)){pl.cash+=s.h/2;st.houses--;log(pl.name+' sold a building on '+s.n+' for '+fmt(s.h/2)+'.',seat);}
   else if(a==='mg'&&canMortgage(i,seat)){pl.cash+=s.p/2;st.mortgaged=true;log(pl.name+' mortgaged '+s.n+' for '+fmt(s.p/2)+'.',seat);}
   else if(a==='um'&&!debt&&canUnmortgage(i,seat)){pl.cash-=unmortgageCost(i);st.mortgaged=false;log(pl.name+' unmortgaged '+s.n+'.',seat);}
@@ -1310,7 +1348,7 @@ function aiManageEconomy(){
     }
     if(done)break;
   }
-  if(built>0)quip(q(QUIPS.build));
+  if(built>0){sfx('build');quip(q(QUIPS.build));}
   const spare=aiReserve()+200;
   const morts=ownedBy(1).filter(i=>pr(i).mortgaged)
     .sort((a,b)=>((B[a].t==='rr'?0:1)-(B[b].t==='rr'?0:1))||B[a].p-B[b].p);
@@ -1574,8 +1612,16 @@ function hostOnData(msg){
 function guestOnData(msg){
   if(!msg||typeof msg!=='object')return;
   switch(msg.t){
+    case 'ver': NET.gotVer=true; break;
+    case 'badver': versionMismatch(GAME_VERSION,+msg.hostV||1); break;
     case 'state':
-      state=msg.s;
+      if(!NET.gotVer){versionMismatch(GAME_VERSION,1);return;} // pre-versioning host started a game without the handshake
+      {
+        const prevCash=state?state.players[NET.seat].cash:null;
+        state=msg.s;
+        if(prevCash!==null&&state.players[NET.seat].cash>prevCash)sfx('cash');
+        else if(prevCash!==null&&state.players[NET.seat].cash<prevCash)sfx('pay');
+      }
       refresh();
       if(NET.manageRerender)NET.manageRerender();
       if(!NET.activeReq&&!state.over)status(state.turn===NET.seat?'':'Waiting for '+P(0).name+'…');
@@ -1603,6 +1649,19 @@ async function handleReq(msg){
   status(state&&!state.over?'Waiting…':'');
   netSend({t:'res',id:msg.id,v:v===undefined?null:v});
 }
+function versionMismatch(mine,theirs){
+  setTimeout(()=>teardownNet(),600); // give the badver message time to leave first
+  const iAmOld=mine<theirs;
+  showModal(
+    '<h2>⚠️ Version mismatch</h2>'+
+    '<p style="color:#aeb9c6">You are running <b>v'+mine+'</b> but your opponent has <b>v'+theirs+'</b>. Both players need the same version to play.</p>'+
+    '<p style="color:#aeb9c6;margin-top:8px">'+(iAmOld
+      ?'<b>Your copy is the older one.</b> Hard-refresh this page (Cmd/Ctrl + Shift + R) or re-download the file, then try again.'
+      :'<b>Your opponent’s copy is the older one.</b> Ask them to hard-refresh (Cmd/Ctrl + Shift + R) or re-download the file, then try again.')+'</p>'+
+    '<div class="mbtns"><button class="abtn primary" id="vmok">Back to Menu</button></div>'
+  );
+  $('vmok').onclick=()=>{closeModal();startScreen();};
+}
 function opponentLeft(){
   const wasActive=state&&!state.over;
   teardownNet();
@@ -1623,6 +1682,7 @@ function beginHostedGame(guestName,guestToken){
   state=freshState(NET.hostToken,gt);
   state.players[0].name=NET.hostName;state.players[0].ai=false;
   state.players[1].name=guestName;state.players[1].ai=false;
+  netSend({t:'ver',v:GAME_VERSION}); // guests refuse game data that isn't preceded by a version confirmation
   closeModal();
   $('log').innerHTML='';
   log('— Online game! '+NET.hostName+' '+NET.hostToken+' vs '+guestName+' '+gt+'. '+NET.hostName+' goes first. —','g');
@@ -1667,6 +1727,12 @@ function hostGame(name,token){
     watchConn(c);
     c.on('data',msg=>{
       if(msg&&msg.t==='hello'&&NET.awaitingHello){
+        const guestV=+msg.v||1;
+        if(guestV!==GAME_VERSION){
+          netSend({t:'badver',hostV:GAME_VERSION});
+          versionMismatch(GAME_VERSION,guestV);
+          return;
+        }
         NET.awaitingHello=false;
         beginHostedGame(String(msg.name||'Friend').slice(0,20)||'Friend',msg.token);
       }else hostOnData(msg);
@@ -1695,7 +1761,7 @@ function joinGame(name,code,token){
       $('log').innerHTML='';
       appendLog('— Connected! Waiting for the host to start… —','g');
       closeModal();
-      c.send({t:'hello',name:name,token:token});
+      c.send({t:'hello',name:name,token:token,v:GAME_VERSION});
     });
     c.on('data',guestOnData);
   });
@@ -1820,6 +1886,14 @@ $('btn-new').onclick=()=>{
   startScreen();
 };
 $('btn-rules').onclick=rulesModal;
+$('ver').textContent='v'+GAME_VERSION;
+$('btn-snd').textContent=SND.enabled?'🔊':'🔇';
+$('btn-snd').onclick=()=>{
+  SND.enabled=!SND.enabled;
+  try{localStorage.setItem('mono_snd',SND.enabled?'on':'off');}catch(e){}
+  $('btn-snd').textContent=SND.enabled?'🔊':'🔇';
+  if(SND.enabled)sfx('cash');
+};
 buildBoard();
 setDie($('die0'),3);setDie($('die1'),4);
 startScreen();
