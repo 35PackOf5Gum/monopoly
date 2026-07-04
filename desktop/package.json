@@ -1,0 +1,30 @@
+{
+  "name": "monopoly-1v1",
+  "productName": "Monopoly 1v1",
+  "version": "3.0.0",
+  "description": "Classic Monopoly — offline vs Claude AI or online vs a friend with a room code",
+  "main": "main.js",
+  "author": "35PackOf5Gum",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "io.github.pack5gum.monopoly1v1",
+    "files": [
+      "main.js",
+      "index.html",
+      "manifest.json",
+      "sw.js",
+      "version.json",
+      "icon-192.png",
+      "icon-512.png"
+    ],
+    "icon": "icon-512.png",
+    "mac": { "target": "dmg", "category": "public.app-category.board-games" },
+    "win": { "target": "nsis" },
+    "linux": { "target": "AppImage", "category": "Game" },
+    "nsis": { "oneClick": true, "deleteAppDataOnUninstall": true }
+  }
+}

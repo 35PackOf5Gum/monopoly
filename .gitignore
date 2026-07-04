@@ -1,0 +1,10 @@
+desktop/node_modules/
+desktop/dist/
+# game files are copied into desktop/ only during CI builds
+desktop/index.html
+desktop/manifest.json
+desktop/sw.js
+desktop/version.json
+desktop/icon-192.png
+desktop/icon-512.png
+.DS_Store

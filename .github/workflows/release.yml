@@ -1,0 +1,49 @@
+name: Build desktop apps
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. app-v3)"
+        required: true
+        default: "app-v3"
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Stage game files into the app
+        shell: bash
+        run: cp index.html manifest.json sw.js version.json icon-192.png icon-512.png desktop/
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm install
+      - name: Build app
+        working-directory: desktop
+        run: npx electron-builder --publish never
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: "Monopoly 1v1 — Desktop Apps (${{ github.event.inputs.tag }})"
+          body: |
+            Desktop builds of Monopoly 1v1. The app always runs the latest game version (it loads the live site and works offline after the first launch).
+
+            - **macOS**: download the `.dmg`, open it, drag Monopoly 1v1 to Applications. First launch: right-click the app → Open (it's unsigned).
+            - **Windows**: download the `.exe` installer and run it. If SmartScreen appears: More info → Run anyway (it's unsigned).
+            - **Linux**: download the `.AppImage`, `chmod +x` it, and run.
+          files: |
+            desktop/dist/*.dmg
+            desktop/dist/*.exe
+            desktop/dist/*.AppImage
+          fail_on_unmatched_files: false
