@@ -77,10 +77,16 @@ main{flex:1; display:flex; gap:14px; padding:12px; min-height:0;}
 .cell.corner .nm{font-size:10px;}
 .cell.corner .ic{font-size:26px;}
 .houses{display:flex; gap:2px;}
-.houses .h{width:9px; height:9px; background:#0d7a33; border:1px solid #063; border-radius:1px;}
-.houses .hotel{width:20px; height:11px; background:#c8102e; border:1px solid #700; border-radius:1px;}
+.houses .h{
+  width:10px; height:10px; background:#3ddc63; border:1.5px solid #fff; border-radius:2px;
+  box-shadow:0 1px 3px rgba(0,0,0,.65);
+}
+.houses .hotel{
+  width:22px; height:12px; background:#ff2d3f; border:1.5px solid #fff; border-radius:2px;
+  box-shadow:0 1px 3px rgba(0,0,0,.65);
+}
 .cell.left .houses,.cell.right .houses{flex-direction:column;}
-.cell.left .houses .hotel,.cell.right .houses .hotel{width:11px; height:20px;}
+.cell.left .houses .hotel,.cell.right .houses .hotel{width:12px; height:22px;}
 .tok{position:absolute; bottom:2px; left:0; right:0; display:flex; justify-content:center; gap:2px; pointer-events:none; z-index:3; flex-wrap:wrap;}
 .cell.top .tok{bottom:auto; top:2px;}
 .cell.left .tok,.cell.right .tok{bottom:auto; top:50%; transform:translateY(-50%);}
@@ -126,6 +132,14 @@ main{flex:1; display:flex; gap:14px; padding:12px; min-height:0;}
 .die i{border-radius:50%; background:#161616; opacity:0; margin:1.5px;}
 .die.rolling{animation:shake .12s infinite;}
 @keyframes shake{0%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}100%{transform:rotate(-6deg)}}
+#dicebox.canroll{cursor:pointer;}
+#dicebox.canroll .die{animation:diceglow 1.1s infinite;}
+@keyframes diceglow{0%,100%{box-shadow:0 3px 6px rgba(0,0,0,.3);}50%{box-shadow:0 0 16px 5px rgba(255,180,40,.85);}}
+#dicehint{font-size:12.5px; font-weight:700; color:#7a5c00; min-height:16px;}
+.abtn.pulse{border-color:#ffd54a; animation:btnpulse 1.2s infinite;}
+@keyframes btnpulse{0%,100%{box-shadow:none;}50%{box-shadow:0 0 10px 2px rgba(255,213,74,.55);}}
+.pcard.bank{border-style:dashed; border-color:#3a4656;}
+.pcard.bank .pname{color:#c8b45a;}
 #turnbanner{font-size:14px; font-weight:700; color:#222; background:rgba(255,255,255,.55); padding:4px 14px; border-radius:20px; border:1px solid #999;}
 #cardshow{
   display:none; background:#fffef2; color:#222; border:2px solid #333; border-radius:8px;
@@ -435,7 +449,7 @@ const q=a=>a[Math.floor(Math.random()*a.length)];
 const TOKENS=['🎩','🐕','🐈','🏎️','🚢','⛵','👢','🐎','🦖','🐧','🦆','🛒'];
 const AINAMES=['Claude','Claudette','Claude Jr.'];
 const SAVEKEY='monopoly_1v1_save_v1';
-const GAME_VERSION=5; // bump on every release — online play requires all players to match
+const GAME_VERSION=6; // bump on every release — online play requires all players to match
 /* ================= SOUND ================= */
 const SND={enabled:(function(){try{return localStorage.getItem('mono_snd')!=='off';}catch(e){return true;}})(),ctx:null};
 function tone(f,t0,dur,type,vol){
@@ -607,6 +621,7 @@ function buildBoard(){
   center.innerHTML='<div class="logo">MONOPOLY</div><div class="vs">head to head</div>'+
     '<div id="turnbanner"></div>'+
     '<div id="dicebox"><div class="die" id="die0">'+'<i></i>'.repeat(9)+'</div><div class="die" id="die1">'+'<i></i>'.repeat(9)+'</div></div>'+
+    '<div id="dicehint"></div>'+
     '<div id="cardshow"><div class="ct"></div><div class="cb"></div></div>';
   bd.appendChild(center);
   B.forEach((s,i)=>{
@@ -656,18 +671,19 @@ function refresh(){
     if(state.players[state.turn]&&!state.players[state.turn].bankrupt&&state.players[state.turn].pos===i&&!state.over)c.classList.add('active');
   });
   const pv=$('players'); pv.innerHTML='';
+  const chipHTML=i=>{
+    const s=B[i],st=pr(i);
+    const cm=st.mortgaged?' cm':'';
+    if(s.t==='rr')return '<div class="chip rrchip'+cm+'" data-i="'+i+'" title="'+s.n+'">🚂</div>';
+    if(s.t==='ut')return '<div class="chip utchip'+cm+'" data-i="'+i+'" title="'+s.n+'">'+(i===12?'💡':'🚰')+'</div>';
+    return '<div class="chip'+cm+'" data-i="'+i+'" title="'+s.n+'" style="background:'+GROUPCOL[s.g]+'">'+(st.houses>0?'<span class="hc">'+(st.houses===5?'H':st.houses)+'</span>':'')+'</div>';
+  };
   state.players.forEach(p=>{
     const d=document.createElement('div');
     d.className='pcard'+(state.turn===p.id&&!state.over&&!p.bankrupt?' turn':'')+(p.bankrupt?' dead':'');
     const owned=sortedOwned(p.id);
     let chips='';
-    for(const i of owned){
-      const s=B[i],st=pr(i);
-      const cm=st.mortgaged?' cm':'';
-      if(s.t==='rr')chips+='<div class="chip rrchip'+cm+'" data-i="'+i+'" title="'+s.n+'">🚂</div>';
-      else if(s.t==='ut')chips+='<div class="chip utchip'+cm+'" data-i="'+i+'" title="'+s.n+'">'+(i===12?'💡':'🚰')+'</div>';
-      else chips+='<div class="chip'+cm+'" data-i="'+i+'" title="'+s.n+'" style="background:'+GROUPCOL[s.g]+'">'+(st.houses>0?'<span class="hc">'+(st.houses===5?'H':st.houses)+'</span>':'')+'</div>';
-    }
+    for(const i of owned)chips+=chipHTML(i);
     const extras=[];
     if(p.bankrupt)extras.push('BANKRUPT');
     if(p.cards.length)extras.push(p.cards.length+'× Get Out of Jail Free');
@@ -679,6 +695,16 @@ function refresh(){
     d.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>showSpaceInfo(+ch.dataset.i));
     pv.appendChild(d);
   });
+  // the bank: everything still up for grabs, at a glance
+  const groupKey=i=>{const s=B[i];return s.t==='p'?GROUPORDER[s.g]*100+i:s.t==='rr'?800+i:900+i;};
+  const unowned=B.map((s,i)=>i).filter(i=>['p','rr','ut'].includes(B[i].t)&&pr(i).owner===null).sort((a,b)=>groupKey(a)-groupKey(b));
+  const bk=document.createElement('div');
+  bk.className='pcard bank';
+  bk.innerHTML='<div class="top"><span class="tokbig">🏦</span><span class="pname">Bank</span><span class="cash" style="color:#c8b45a">'+unowned.length+' left</span></div>'+
+    '<div class="meta">'+(unowned.length?'Unowned — land on one to buy it':'Every property is owned!')+'</div>'+
+    '<div class="chips">'+unowned.map(chipHTML).join('')+'</div>';
+  bk.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>showSpaceInfo(+ch.dataset.i));
+  pv.appendChild(bk);
   $('turnbanner').textContent=state.over?'Game over':(state.turn===NET.seat?'Your turn':P(state.turn).name+'’s turn');
   if(NET.mode==='host')hostBroadcast({t:'state',s:state});
 }
@@ -711,17 +737,35 @@ function guestDice(m){
   if(m.a){setDie(d0,m.a);setDie(d1,m.b);}
 }
 /* ================= UI PRIMITIVES ================= */
+function armDice(fn){
+  const db=$('dicebox');
+  if(!db)return;
+  db.classList.add('canroll');
+  db.onclick=fn;
+  const h=$('dicehint');
+  if(h)h.textContent='🎲 Click the dice to roll!';
+}
+function disarmDice(){
+  const db=$('dicebox');
+  if(db){db.classList.remove('canroll');db.onclick=null;}
+  const h=$('dicehint');
+  if(h)h.textContent='';
+}
 function uiButtons(btns){
   return new Promise(res=>{
     const area=$('actions'); area.innerHTML='';
+    const finish=v=>{area.innerHTML='';disarmDice();res(v);};
     btns.forEach(b=>{
       const e=document.createElement('button');
       e.className='abtn '+(b.cls||'');
       e.textContent=b.label;
       if(b.disabled)e.disabled=true;
-      e.onclick=()=>{area.innerHTML='';res(b.value);};
+      e.onclick=()=>finish(b.value);
       area.appendChild(e);
     });
+    // if a roll is on offer, the dice themselves become the big shiny button
+    const rollBtn=btns.find(b=>(b.value==='roll'||b.value==='jailroll')&&!b.disabled);
+    if(rollBtn)armDice(()=>finish(rollBtn.value));
   });
 }
 function showModal(html){$('modal').innerHTML=html;$('overlay').classList.add('show');return $('modal');}
@@ -880,6 +924,7 @@ async function bankrupt(pl,creditor){
     await sleep(600);
     gameOverModal(winner.id,pl.name);
     $('actions').innerHTML='';
+    disarmDice();
     status('');
   }else{
     save();
@@ -1155,6 +1200,11 @@ function deedStatus(i){
   return t;
 }
 /* ================= MANAGE (BUILD / MORTGAGE) ================= */
+function canBuildAny(pid){return ownedBy(pid).some(i=>canBuyHouse(i,pid));}
+function manageBtn(pid){
+  const b=canBuildAny(pid);
+  return {label:b?'🏠 Manage — build available!':'🏠 Manage',value:'manage',cls:b?'pulse':''};
+}
 function canBuyHouse(i,pid){
   const s=B[i],st=pr(i);
   if(s.t!=='p'||st.owner!==pid||st.mortgaged||st.houses>=5)return false;
@@ -1565,7 +1615,7 @@ async function humanTurn(pl){
     }else{
       opts.push({label:'🎲 Roll Dice',value:'roll',cls:'primary'});
     }
-    opts.push({label:'🏠 Manage',value:'manage'});
+    opts.push(manageBtn(pid));
     opts.push({label:'🤝 Trade',value:'trade'});
     const c=await ioButtons(pid,opts);
     if(dead(pl))return;
@@ -1589,7 +1639,7 @@ async function humanTurn(pl){
   while(!dead(pl)){
     const c=await ioButtons(pid,[
       {label:'End Turn ▶',value:'end',cls:'primary'},
-      {label:'🏠 Manage',value:'manage'},
+      manageBtn(pid),
       {label:'🤝 Trade',value:'trade'},
     ]);
     if(dead(pl))return;
@@ -1643,7 +1693,7 @@ async function humanRollChain(pl,pre){
       while(true){
         const cc=await ioButtons(pl.id,[
           {label:'🎲 Roll Again',value:'roll',cls:'primary'},
-          {label:'🏠 Manage',value:'manage'},
+          manageBtn(pl.id),
           {label:'🤝 Trade',value:'trade'},
         ]);
         if(dead(pl))return;
