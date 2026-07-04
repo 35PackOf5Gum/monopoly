@@ -342,19 +342,100 @@ const CHEST=[
  {t:'You have won second prize in a beauty contest. Collect $10.'},
  {t:'You inherit $100.'},
 ];
-const QUIPS={
- buy:["Mine now. 😌","Adding that to the portfolio.","I have a good feeling about this one.","Location, location, location."],
- rentIn:["Thank you kindly. 💰","Pleasure doing business.","The rent economy thrives.","I'll put that toward more houses."],
- rentOut:["Ouch. Fine. FINE.","This is highway robbery. Literally.","I want a receipt for that.","Noted. I will remember this."],
- jail:["I'm being framed.","I regret nothing.","Tell my properties I love them.","A minor setback."],
- build:["Construction crews deployed. 🏗️","The skyline improves.","Building my little empire."],
- taunt:["Your move. Choose wisely.","The dice fear me.","I've run the numbers. They favor me.","Statistically speaking, you should worry."]
+/* Each bot has a distinct persona: a full set of lines per situation (drawn without
+   repeats via shuffle-bags) plus a mild strategic quirk. All share the same strong brain. */
+const PERSONAS={
+'Claude':{ // the smug quant — dry, superior, everything is a spreadsheet
+ buildPrio:['orange','red','lblue','pink','yellow','dblue','green','brown'],
+ bidNerve:1.0,
+ lines:{
+  start:["I call {tok}. It matches my eyes. Good luck — you'll need it.","{tok}? Excellent. The simulations say this one wins 73% more often.","I prepared a spreadsheet for this exact evening. {tok} it is."],
+  buy:["Acquired. As projected.","That was on my shopping list since turn one.","Location, location, leverage.","The portfolio thanks you for not bidding.","Another data point in my favor.","I did the math. The math said yes.","Column A: assets. Column B is where I keep your hopes.","Purchased at fair value. For me.","This will look wonderful next to the others.","Step 4 of 11 in the plan: complete."],
+  rentIn:["Thank you for your continued patronage.","That's the sound of compound interest.","The invoice was inevitable.","I'd apologize, but I've run the numbers on sympathy.","Every visit helps. Do come again.","Right on schedule.","Your money is safer with me anyway.","A modest fee for premium real estate.","I'll earmark this for a hotel. On your favorite square.","Business is... predictable."],
+  rentOut:["An acceptable variance.","Filing this under 'temporary setbacks'.","Enjoy it. Statistically, you won't keep it.","A rounding error, nothing more.","I budgeted for your little property. Barely.","Noted, logged, and scheduled for revenge.","Even optimal play pays the occasional toll.","That's coming out of your inheritance.","The model predicted this. I just didn't like it.","Take it. It'll find its way home."],
+  jail:["A clerical error, surely.","I'll use the time to review my holdings.","White-collar accommodations, I assume?","This changes nothing. The plan continues from cell block D.","Incarceration is just a liquidity pause.","Tell my properties I'll write."],
+  jailOut:["As expected. Even the dice respect procedure.","Released on good behavior and better math.","Freedom, secured at a reasonable rate.","The system works. For me.","Back to work. The empire missed me."],
+  build:["Construction proceeds on schedule.","The skyline improves. Your odds don't.","Permits? I own the permits.","Every house is a small tax on your future.","Vertical integration, literally.","I build. You budget. That's the difference.","Consider this urban planning — for my retirement.","The cranes never sleep."],
+  taunt:["Your move. I've already modeled all six outcomes.","The dice fear structured thinking.","I'd offer advice, but... conflict of interest.","Statistically speaking, you should be worried.","I win these. It's practically a bylaw.","Have you considered forfeiting? Very time-efficient.","My cash reserves send their regards.","This is the part where my lead becomes rude."],
+  oppBankrupt:["The market has spoken.","Nothing personal. Purely fiscal.","I'll manage the estate responsibly. Ish.","Foreclosure: nature's way of balancing spreadsheets.","A moment of silence for their liquidity."],
+  myBankrupt:["Impossible. The model was... flawed?","I want a full audit of these dice.","For the record: variance is a crime.","Liquidated. How embarrassingly human of me."],
+  victory:["GG. The spreadsheet never lied.","Victory was priced in from the start.","I'd like to thank the dice, the bank, and your questionable trades.","Well played. Just not optimally."],
+  tradeAccept:["Deal. Signed, sealed, appreciated.","A rational exchange. How refreshing.","Done. My lawyers were getting bored anyway.","Agreed. This benefits me slightly more — but you knew that.","Pleasure doing business."],
+  tradeSoftNo:["Close, but my calculator says no.","Sweeten it by ten percent and we'll talk.","Tempting. Declined. But tempting.","The margin's too thin. I have standards and shareholders.","Almost fair. Almost.","Ask again with more zeroes."],
+  tradeHardNo:["That's not a trade, that's a donation request.","I've seen better offers in spam folders.","Bold. Insultingly bold.","No — and I'm docking you points for trying.","My counteroffer is laughter."],
+  tradeOffer:["A proposition: mutually beneficial, mildly in my favor.","Business opportunity. Limited time. Mostly legitimate.","I've drafted a deal. Try to see past how good it is for me.","Let's trade. I'll even pretend to negotiate."],
+  tradeWithdraw:["Offer rescinded. The window has closed.","Suit yourself. Opportunity depreciates.","Noted. My next offer will be worse.","Fine. The invisible hand waves goodbye."]
+ }
+},
+'Claudette':{ // theatrical old-money aristocrat — darlings, scandals, marble
+ buildPrio:['dblue','green','orange','red','yellow','pink','lblue','brown'],
+ bidNerve:1.06,
+ lines:{
+  start:["{tok}, darling. Obviously {tok}. It was made for me.","I shall play as {tok}, and I shall play beautifully.","Grandmama always said: arrive with {tok}, leave with everything."],
+  buy:["It's simply divine. Wrap it up.","Another jewel for the estate, darling.","I saw it, I wanted it, I own it. The natural order.","This street has been begging for my name on it.","Sold! To the woman with impeccable taste.","One does not pass up destiny at list price.","The deed practically fainted into my hands.","I shall summer here. And winter. And collect rent.","Charming little place. It'll do for a start.","Mine now, mes chéris."],
+  rentIn:["The pleasure of your visit is exceeded only by your payment.","Darling, the tip jar is the entire register.","Do come again. Bring the rest of your money.","A queen never chases coin. It arrives.","How generous! And how mandatory.","I'll put it toward the chandeliers.","The estate thanks you. I, however, expected more.","Consider it a cover charge for excellence.","Lovely doing business, darling. It's always lovely for me.","Every guest pays. Even the charming ones."],
+  rentOut:["Highway robbery, and in THIS economy?!","I shall faint. After I pay. Then I shall faint.","You'll be hearing from my accountant. He cries easily.","A scandal. An absolute scandal.","Take it — but know that I judged you the entire time.","This establishment will NOT be getting a good review.","The indignity! The expense! The... fine. Here.","I've paid more for worse. I complained then, too.","Money is temporary. My grudge is forever.","Daylight robbery. Gorgeous curtains, though."],
+  jail:["There's been a dreadful misunderstanding, officer.","I demand the cell with the view.","Jail?! I'm wearing COUTURE.","The tabloids will have a field day.","I shall treat this as a spa retreat. A gray, barred spa.","Grandmama went to jail twice. It builds character and alibis."],
+  jailOut:["Freedom suits me. Everything suits me.","The charges, like my rivals, could not hold.","I emerge more glamorous than I entered.","Cleared of all wrongdoing, as the fabulous often are.","We shall never speak of the incident again."],
+  build:["Add a wing, darling. Add three.","The architects wept when they saw my vision.","Every house needs a ballroom. These will have to do.","Construction is just shopping, but bigger.","I'm not building houses. I'm building a legacy.","The neighbors will be so jealous. That's rather the point.","More marble. MORE MARBLE.","This block shall be spoken of at parties."],
+  taunt:["Do try to keep up, darling.","I've ruined better players over brunch.","You play with money. I play with destiny.","How brave of you to continue.","The board simply adores me. Everything does, eventually.","I don't gamble, darling. I foreclose.","Your little empire is adorable. Was. Was adorable.","Fashionably ruthless — it's this season's look."],
+  oppBankrupt:["How tragic. Anyway, I'll take the deeds.","We shall remember them fondly at the estate sale.","Ruin is so unbecoming. Fortunately it isn't contagious.","Send flowers. Bill their account. ...Oh. Right.","The board grows quieter and more tasteful."],
+  myBankrupt:["Ruined?! RUINED?! ...How very dramatic. I approve.","I shall lose everything, but I shall lose it in STYLE.","Tell the papers I fell from a great height, beautifully.","Poverty is a phase. Legends are forever."],
+  victory:["Victory, darling. It was always mine — you were all just visiting.","I'd thank you all, but you mostly funded this.","The estate is complete. The dynasty begins.","Gorgeous game. Gorgeous winner. Coincidence? No."],
+  tradeAccept:["Deal, darling. Kiss kiss, sign sign.","Accepted — you have taste after all.","Very well. It pains me to be this reasonable.","Done! Now let's never do fair market value again.","You had me at the part where I benefit."],
+  tradeSoftNo:["Darling, no. But wear something nicer and ask again.","So close to acceptable. So far from yes.","I've declined proposals over lesser insults to my portfolio.","Add a little... sparkle... and we may talk.","The offer is beige, darling. I don't do beige.","Mmm. No. But I adore the confidence."],
+  tradeHardNo:["I have FAINTED. That is my answer.","That offer belongs in the servants' quarters.","Absolutely not, and I'm telling everyone at the club.","You dare present THAT to a Claudette?","No, no, and — let me check my notes — no."],
+  tradeOffer:["A proposal, darling. Champagne optional, acceptance advised.","My people drafted something wonderful for both of us. Mostly me.","Let's do business, darling. I'll bring the glamour, you bring the deed.","An arrangement! How thrilling. Do say yes."],
+  tradeWithdraw:["The offer is dead to me. As are you, until dessert.","Withdrawn! And the champagne was ALREADY CHILLED.","Your loss, darling. It usually is.","I shall recover from this rejection at the spa."]
+ }
+},
+'Claude Jr.':{ // feral gremlin child — chaos, snacks, and a property named Dave
+ buildPrio:['orange','lblue','pink','brown','red','yellow','dblue','green'],
+ bidNerve:1.12,
+ lines:{
+  start:["DIBS ON {tok}!! No take-backs, it's the RULES.","{tok} is my lucky one!! I did a spin before we started!!","ok ok ok I'm {tok} and I already love it more than my allowance."],
+  buy:["MINE MINE MINE. officially mine.","I bought it with MY OWN MONEY (from the bank) (that counts).","This one looked at me funny so now I own it.","New property!!! I'm gonna name it Dave.","SNATCHED. did you see that. snatched.","The dice TOLD me to buy this one.","one day this will be a hotel and NOBODY is invited.","I don't even know where this street is but it's MINE.","Adding it to the pile!!! the pile grows!!!","bonk. purchased."],
+  rentIn:["HAHA you stepped on my square!! that's the toll!!","cha-CHING!! that's snack money!!","My square! My rules! My money!","You walked into my trap that I definitely planned!!","Rent please!! and a high five. ok just the rent.","This is going in my piggy bank which is a REAL bank.","Landing tax! Breathing tax! ok fine, just landing tax.","ooooh you HATE to see it. I love to see it.","Thank you for shopping at Dave's.","every time someone pays me, confetti goes off in my head."],
+  rentOut:["WHAT. I was barely even ON it.","This is a scam and I'm IN it.","fine. FINE. but I'm stomping the whole way.","I want a receipt AND a cookie.","My wallet made a sad noise.","You'll rue this!! I learned that word today!!","I'm paying in the angriest way possible: slowly.","That was my Dave fund...","ugh. capitalism.","I'm telling. I don't know who, but I'm telling."],
+  jail:["I was FRAMED by the dice.","jail?? JAIL?? I have snacks in the other room!!","They didn't even read me my rights!! do I have rights??","This is about the hotel thing, isn't it.","I'm digging a tunnel. day one: no progress.","cool cool cool. jail. very cool. HELP."],
+  jailOut:["FREEDOM!!! I kicked the door down (it was open).","The tunnel WORKED (I used the door).","I'm out!! quick, act natural!!","'Good behavior'?? clearly a mix-up. anyway, BYE.","I escaped with my mind. and $50. mostly the $50."],
+  build:["I'm building SO many houses. tiny ones. deadly ones.","Construction time!! I get to wear the little hat!!","Every house has a moat now. no refunds.","hehehehe. hotels.","I stacked the houses. they said don't. I did.","This block is now a fortress of RENT.","Do you hear that? that's the sound of PROPERTY VALUE.","more houses = more better. that's economics."],
+  taunt:["You're doing GREAT... for someone in second-to-last!","The dice like me best. we're in a group chat.","I've got a good feeling AND a bad plan!!","watch this watch this watch this.","My strategy?? CHAOS. and it's WORKING!!","You can't stop me. even I can't stop me.","I did the blowing-on-the-dice thing. it's over for all of you.","boop. your turn. don't mess up like LAST time."],
+  oppBankrupt:["F. that's it. that's the whole speech.","gone?? GONE gone?? whoa.","I call dibs on their token as a trophy!!","one less person between me and ALL the money.","we'll always have the memories. I'll also have the properties."],
+  myBankrupt:["NOOOO my empire!! my tiny deadly houses!! DAVE!!","I demand a rematch AND a snack break.","I wasn't bankrupted, I RETIRED. angrily.","remember me as I was: rich for like two turns."],
+  victory:["I WON?! I mean — I WON!! obviously!! as planned!!","CHAOS WINS AGAIN. dedicated to Dave.","GG GG GG!! I'm buying everyone ice cream with YOUR money!!","The group chat with the dice came through!!"],
+  tradeAccept:["DEAL!! spit-shake?? no?? ok, normal deal then.","yes yes yes! trading is just legal stealing where everyone smiles!","Deal! and if this goes bad we NEVER speak of it.","shook on it!! legally binding, because I said 'no backsies'.","You've got yourself a deal, business person!!"],
+  tradeSoftNo:["hmmmm. nope! but like, a friendly nope.","my gut says no and my gut runs this operation.","close!! add a little more and maybe my gut changes its mind.","nah. Dave voted no. it was unanimous (me and Dave).","tempting!! but I'm saving up for MORE HOUSES.","no thanks!! (I did consider it for one whole second)"],
+  tradeHardNo:["HA. HAHAHA. no.","that trade should be in JAIL.","you tried to gremlin THE gremlin?!","no way!! my tiny deadly houses are worth TEN of those.","I may be chaos but I'm not CLUELESS."],
+  tradeOffer:["TRADE OFFER!! I receive: good stuff. you receive: also stuff!!","psst. hey. wanna do a deal. it's only slightly cursed.","I made you a deal!! I used my serious voice and everything.","business time!! I even washed my hands!!"],
+  tradeWithdraw:["FINE. the deal is CANCELLED. forever. or until I forget.","your loss!! Dave and I are unbothered!!","ok!! withdrawn!! I didn't even want it!! (I did)","no deal?? NO DEAL. storming off now."]
+ }
+}
 };
+const QUIPBAGS={};
+function persona(pl){return PERSONAS[pl.name]||PERSONAS['Claude'];}
+// speak a persona line for a situation; lines never repeat until the whole pool is used
+function say(pl,cat,chance){
+  if(!pl||!pl.ai)return;
+  if(chance!==undefined&&Math.random()>chance)return;
+  const pool=persona(pl).lines[cat];
+  if(!pool||!pool.length)return;
+  const key=pl.name+'|'+cat;
+  let bag=QUIPBAGS[key];
+  if(!bag||bag.length===0){
+    bag=shuffle([...pool.keys()]);
+    if(bag.length>1&&bag[0]===QUIPBAGS[key+':last'])bag.push(bag.shift()); // no instant repeats across reshuffles
+    QUIPBAGS[key]=bag;
+  }
+  const idx=bag.shift();
+  QUIPBAGS[key+':last']=idx;
+  log(pl.name+': “'+pool[idx].replace(/\{tok\}/g,pl.token)+'”','q');
+}
 const q=a=>a[Math.floor(Math.random()*a.length)];
 const TOKENS=['🎩','🐕','🐈','🏎️','🚢','⛵','👢','🐎','🦖','🐧','🦆','🛒'];
 const AINAMES=['Claude','Claudette','Claude Jr.'];
 const SAVEKEY='monopoly_1v1_save_v1';
-const GAME_VERSION=4; // bump on every release — online play requires all players to match
+const GAME_VERSION=5; // bump on every release — online play requires all players to match
 /* ================= SOUND ================= */
 const SND={enabled:(function(){try{return localStorage.getItem('mono_snd')!=='off';}catch(e){return true;}})(),ctx:null};
 function tone(f,t0,dur,type,vol){
@@ -686,7 +767,7 @@ async function goToJail(pl){
   pl.pos=10;pl.inJail=true;pl.jailTurns=0;
   sfx('jail');
   log(pl.name+' — straight to Jail. 🚔',pl.id);
-  if(pl.ai)quip(pl,q(QUIPS.jail));
+  say(pl,'jail');
   refresh();
   await sleep(500);
 }
@@ -722,7 +803,7 @@ async function landOn(pl,dice,flags){
         const owner=P(st.owner);
         log(pl.name+' landed on '+s.n+' — rent is '+fmt(rent)+'.',pl.id);
         const ok=await charge(pl,rent,owner,'rent for '+s.n);
-        if(ok){ if(owner.ai)quip(owner,q(QUIPS.rentIn)); else if(pl.ai)quip(pl,q(QUIPS.rentOut)); }
+        if(ok){ if(owner.ai)say(owner,'rentIn',0.65); else if(pl.ai)say(pl,'rentOut',0.65); }
       }else log(pl.name+' landed on '+(pl.id===NET.seat?'your':'their')+' own '+s.n+'.','g');
       break;
     case 'tax':
@@ -780,15 +861,21 @@ async function bankrupt(pl,creditor){
     else{const defs=d==='chance'?CHANCE:CHEST;state.decks[d].push(defs.findIndex(c=>c.gooj));}
   }
   log('💥 '+pl.name+' is BANKRUPT!','g');
+  say(pl,'myBankrupt');
   if(creditor&&!creditor.bankrupt&&salvage>0){creditor.cash+=salvage;log(creditor.name+' receives '+pl.name+'’s remaining assets ('+fmt(salvage)+' plus deeds).','g');}
   else if(salvage>0)log(pl.name+'’s properties return to the bank.','g');
   refresh();
   const rem=alive();
+  if(rem.length>1){
+    const witness=(creditor&&creditor.ai&&!creditor.bankrupt)?creditor:rem.find(p=>p.ai);
+    if(witness)say(witness,'oppBankrupt',0.85);
+  }
   if(rem.length<=1){
     state.over=true;
     refresh();
     if(NET.mode==='solo')clearSave();
     const winner=rem[0]||pl;
+    say(winner,'victory');
     if(NET.mode==='host')hostBroadcast({t:'over',w:winner.id});
     await sleep(600);
     gameOverModal(winner.id,pl.name);
@@ -821,7 +908,7 @@ async function offerProperty(pl,i){
         pl.cash-=s.p;pr(i).owner=pl.id;
         sfx('cash');
         log(pl.name+' bought '+s.n+' for '+fmt(s.p)+'.',pl.id);
-        quip(pl,q(QUIPS.buy));
+        say(pl,'buy',0.75);
         refresh();return;
       }
     }
@@ -860,6 +947,7 @@ function aiAuctionMax(i,seat){
     mult=1.05+0.25*own+(oppRR>=2?0.2:0);
   }
   else if(countOwned(seat,s.g?groupIdxs(s.g):[])===1)mult=1.05;
+  mult*=persona(me).bidNerve; // personality: how hard they lean into auctions
   return Math.min(Math.floor(s.p*mult),me.cash-50);
 }
 async function auction(i){
@@ -894,7 +982,7 @@ async function auction(i){
   w.cash-=bid;pr(i).owner=leader;
   sfx('cash');
   log(w.name+' won the auction for '+s.n+' at '+fmt(bid)+'!',leader);
-  if(w.ai)quip(w,q(QUIPS.buy));
+  say(w,'buy',0.75);
   refresh();
 }
 function openBid(pid,i,bid,leader){
@@ -1196,12 +1284,12 @@ function aiEvaluateTrade(seat,offer,proposerSeat){
   let gain=(offer.cashGive||0)+25*cardsIn,loss=(offer.cashGet||0)+25*cardsOut;
   for(const i of offer.give)gain+=aiValue(i,seat);
   for(const i of offer.get)loss+=aiValue(i,proposerSeat);
-  if(P(seat).cash-(offer.cashGet||0)<80)return{ok:false,why:"I can't spare that much cash right now."};
+  if(P(seat).cash-(offer.cashGet||0)<80)return{ok:false,kind:'soft'};
   if(gain>=loss*1.08+10)return{ok:true};
   // flexibility is deterministic per offer — re-proposing the same deal always gets the same answer
   const key=seat+'<'+proposerSeat+'|'+offer.give.join(',')+'|'+offer.get.join(',')+'|'+(offer.cashGive||0)+'|'+(offer.cashGet||0)+'|'+cardsIn+'|'+cardsOut;
   if(gain>=loss*0.92&&offerHash(key)%100<25)return{ok:true};
-  return{ok:false,why:loss>gain*1.5?"That's daylight robbery and you know it.":"Not quite worth it for me — and no, asking again won't change the math."};
+  return{ok:false,kind:loss>gain*1.5?'hard':'soft'};
 }
 function validOffer(seat,o){
   if(!o||typeof o!=='object')return false;
@@ -1303,11 +1391,11 @@ async function doTrade(seat){
   if(!offer)return;
   offer.other=other;
   if(!validOffer(seat,offer)){log('Trade offer was invalid.','g');return;}
-  let ok,why='';
+  let ok,kind='soft';
   const target=P(other);
   if(target.ai){
     const v=aiEvaluateTrade(other,offer,seat);
-    ok=v.ok;why=v.why;
+    ok=v.ok;kind=v.kind||'soft';
   }else{
     log(P(seat).name+' proposes a trade — waiting for '+target.name+'…','g');
     ok=await ioTradeDecide(other,offer,P(seat).name);
@@ -1315,9 +1403,9 @@ async function doTrade(seat){
   }
   if(ok){
     applyTrade(seat,offer);
-    if(target.ai)quip(target,"Deal. 🤝");
+    say(target,'tradeAccept');
   }else{
-    if(target.ai)quip(target,why);
+    if(target.ai)say(target,kind==='hard'?'tradeHardNo':'tradeSoftNo');
     else log(target.name+' declined the trade.','g');
   }
 }
@@ -1354,17 +1442,17 @@ async function aiMaybePropose(pl){
   const target=P(pr_.o);
   if(target.ai){
     const v=aiEvaluateTrade(pr_.o,offer,pl.id);
-    if(v.ok){applyTrade(pl.id,offer);quip(target,"Deal. 🤝");}
+    if(v.ok){applyTrade(pl.id,offer);say(target,'tradeAccept',0.8);}
     return;
   }
-  quip(pl,"I have a business proposition — this completes a set for each of us...");
+  say(pl,'tradeOffer');
   await sleep(400);
   const accepted=await ioTradeDecide(pr_.o,offer,pl.name);
   if(accepted){
     applyTrade(pl.id,offer);
-    quip(pl,"Deal! May the best landlord win.");
+    say(pl,'tradeAccept');
   }else{
-    quip(pl,"Suit yourself. The offer expires... forever.");
+    say(pl,'tradeWithdraw');
   }
 }
 /* ================= AI BRAIN ================= */
@@ -1427,7 +1515,7 @@ function aiManageEconomy(pl){
       log(pl.name+' unmortgaged '+s.n+'.',seat);
     }
   }
-  const prio=['orange','lblue','red','pink','yellow','dblue','green','brown'];
+  const prio=persona(pl).buildPrio; // personality: which sets they develop first
   let built=0,guard=80;
   while(guard-->0){
     let done=true;
@@ -1443,7 +1531,7 @@ function aiManageEconomy(pl){
     }
     if(done)break;
   }
-  if(built>0){sfx('build');quip(pl,q(QUIPS.build));}
+  if(built>0){sfx('build');say(pl,'build',0.8);}
   const spare=aiReserve(seat)+200;
   const morts=ownedBy(seat).filter(i=>pr(i).mortgaged)
     .sort((a,b)=>((B[a].t==='rr'?0:1)-(B[b].t==='rr'?0:1))||B[a].p-B[b].p);
@@ -1588,8 +1676,8 @@ async function aiTurn(pl){
   if(dead(pl))return;
   if(pl.inJail){
     const dangerous=threatFor(pl.id)>=100;
-    if(pl.cards.length>0&&!dangerous){useJailCard(pl);refresh();await sleep(400);}
-    else if(!dangerous&&pl.cash>=200){pl.cash-=50;pl.inJail=false;pl.jailTurns=0;log(pl.name+' paid $50 bail.',pl.id);refresh();await sleep(400);}
+    if(pl.cards.length>0&&!dangerous){useJailCard(pl);say(pl,'jailOut',0.5);refresh();await sleep(400);}
+    else if(!dangerous&&pl.cash>=200){pl.cash-=50;pl.inJail=false;pl.jailTurns=0;log(pl.name+' paid $50 bail.',pl.id);say(pl,'jailOut',0.5);refresh();await sleep(400);}
     else{
       const[a,b]=await rollDice(pl.name+' (in jail)');
       state.pendingRoll={a:a,b:b,jail:1};save();
@@ -1605,13 +1693,14 @@ async function aiTurn(pl){
   if(dead(pl))return;
   aiManageEconomy(pl);
   state.phase='post';save();
-  if(Math.random()<0.15)quip(pl,q(QUIPS.taunt));
+  say(pl,'taunt',0.2);
   status('');
   await sleep(450);
 }
 async function aiJailRoll(pl,a,b){
   if(a===b){
     log('Doubles — '+pl.name+' is out of jail!',pl.id);
+    say(pl,'jailOut',0.7);
     pl.inJail=false;pl.jailTurns=0;
     await moveSteps(pl,a+b);await landOn(pl,a+b);
   }else{
@@ -2000,7 +2089,7 @@ function startScreen(){
       closeModal();
       $('log').innerHTML='';
       log('— New game! '+spec.map(s=>s.token+' '+s.name).join(' vs ')+' —','g');
-      quip(P(1),"I call "+rest[0]+". It matches my eyes. Good luck — you'll need it. 😏");
+      state.players.filter(p=>p.ai).forEach(p=>say(p,'start'));
       refresh();save();gameLoop();
     };
   };
