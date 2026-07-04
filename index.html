@@ -333,7 +333,7 @@ const QUIPS={
 const q=a=>a[Math.floor(Math.random()*a.length)];
 const TOKENS=['🎩','🐕','🐈','🏎️','🚢','⛵','👢','🐎','🦖','🐧','🦆','🛒'];
 const SAVEKEY='monopoly_1v1_save_v1';
-const GAME_VERSION=2; // bump on every release — online play requires both players to match
+const GAME_VERSION=3; // bump on every release — online play requires both players to match
 /* ================= SOUND ================= */
 const SND={enabled:(function(){try{return localStorage.getItem('mono_snd')!=='off';}catch(e){return true;}})(),ctx:null};
 function tone(f,t0,dur,type,vol){
@@ -1776,6 +1776,21 @@ function joinGame(name,code,token){
   },12000);
 }
 /* ================= START ================= */
+// the page downloads itself, so the saved file is always exactly the version you're running
+async function downloadCopy(){
+  try{
+    const res=await fetch(location.href.split('#')[0].split('?')[0],{cache:'no-cache'});
+    if(!res.ok)throw new Error(res.status);
+    const blob=new Blob([await res.text()],{type:'text/html'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='monopoly-1v1-v'+GAME_VERSION+'.html';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+  }catch(e){
+    alert('Could not download a copy — if you opened this as a local file, you already have it!');
+  }
+}
 function tokenPickerHTML(){
   return '<div class="tokpick" style="justify-content:center">'+TOKENS.map((t,i)=>'<button data-t="'+t+'" class="'+(i===0?'sel':'')+'">'+t+'</button>').join('')+'</div>';
 }
@@ -1799,8 +1814,11 @@ function startScreen(){
     resume+
     '<button class="bigbtn" id="msolo">🤖 Play vs Claude<small>Offline, instant, he talks trash</small></button>'+
     '<button class="bigbtn" id="mhost">🌐 Host online game<small>Get a room code to send a friend (needs internet)</small></button>'+
-    '<button class="bigbtn" id="mjoin">🔗 Join online game<small>Enter a friend’s room code</small></button>'
+    '<button class="bigbtn" id="mjoin">🔗 Join online game<small>Enter a friend’s room code</small></button>'+
+    (location.protocol.indexOf('http')===0?'<button class="bigbtn" id="mdl">⬇️ Download offline copy<small>One file (v'+GAME_VERSION+') — share it with friends or play with no internet</small></button>':'')
   );
+  const dl=m.querySelector('#mdl');
+  if(dl)dl.onclick=downloadCopy;
   if(saved&&!saved.over){
     m.querySelector('#resume').onclick=()=>{
       state=saved;closeModal();
