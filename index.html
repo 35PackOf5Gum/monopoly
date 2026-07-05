@@ -468,8 +468,23 @@ function say(pl,cat,chance){
 const q=a=>a[Math.floor(Math.random()*a.length)];
 const TOKENS=['🎩','🐕','🐈','🏎️','🚢','⛵','👢','🐎','🦖','🐧','🦆','🛒'];
 const AINAMES=['Claude','Claudette','Claude Jr.'];
+/* Bot difficulty. Each knob multiplies/gates a strategic behaviour:
+   buyMul — cash bar to buy non-key property (higher = pickier/timid)
+   reserveMul — cash they hoard idle (higher = under-invests)
+   buildMul — cash held back before building (higher = fewer houses)
+   seek — do they proactively hunt monopoly-completing trades (the key skill)
+   tThresh/tFlexBand/tFlexPct — how easily they accept YOUR offers (low = swindleable)
+   auctionMul — how hard they bid at auction
+   jailSmart — late game, do they correctly sit in jail to dodge rent */
+const DIFF={
+  easy:    {label:'😊 Easy',    buyMul:1.7, reserveMul:1.6, buildMul:1.7, seek:false, tThresh:0.96, tFlexBand:0.85, tFlexPct:45, auctionMul:0.7, jailSmart:false},
+  normal:  {label:'😐 Normal',  buyMul:1.0, reserveMul:1.0, buildMul:1.0, seek:true,  tThresh:1.08, tFlexBand:0.92, tFlexPct:25, auctionMul:1.0, jailSmart:true},
+  ruthless:{label:'😈 Ruthless',buyMul:0.5, reserveMul:0.55,buildMul:0.6, seek:true,  tThresh:1.15, tFlexBand:1.0,  tFlexPct:0,  auctionMul:1.3, jailSmart:true},
+};
+const DIFFKEYS=['easy','normal','ruthless'];
+function diff(){return DIFF[state&&state.difficulty]||DIFF.normal;}
 const SAVEKEY='monopoly_1v1_save_v1';
-const GAME_VERSION=7; // bump on every release — online play requires all players to match
+const GAME_VERSION=8; // bump on every release — online play requires all players to match
 /* ================= SOUND ================= */
 const SND={enabled:(function(){try{return localStorage.getItem('mono_snd')!=='off';}catch(e){return true;}})(),ctx:null};
 function tone(f,t0,dur,type,vol){
@@ -555,10 +570,11 @@ let state=null;
 function P(i){return state.players[i];}
 function pr(i){return state.props[i];}
 function alive(){return state.players.filter(p=>!p.bankrupt);}
-function freshState(spec){
+function freshState(spec,difficulty){
   // spec: [{name, token, ai}] — 2 to 4 entries, seat order
   return {
     v:GAME_VERSION,
+    difficulty:DIFF[difficulty]?difficulty:'normal',
     players:spec.map((s,i)=>({id:i,name:s.name,ai:!!s.ai,token:s.token,cash:1500,pos:0,inJail:false,jailTurns:0,cards:[],bankrupt:false})),
     props:B.map(()=>({owner:null,houses:0,mortgaged:false})),
     turn:0,
@@ -1052,7 +1068,7 @@ function aiAuctionMax(i,seat){
     mult=1.05+0.25*own+(oppRR>=2?0.2:0);
   }
   else if(countOwned(seat,s.g?groupIdxs(s.g):[])===1)mult=1.05;
-  mult*=persona(me).bidNerve; // personality: how hard they lean into auctions
+  mult*=persona(me).bidNerve*diff().auctionMul; // personality + difficulty: how hard they lean into auctions
   return Math.min(Math.floor(s.p*mult),me.cash-50);
 }
 async function auction(i){
@@ -1396,11 +1412,12 @@ function aiEvaluateTrade(seat,offer,proposerSeat){
   let gain=(offer.cashGive||0)+25*cardsIn,loss=(offer.cashGet||0)+25*cardsOut;
   for(const i of offer.give)gain+=aiValue(i,seat);
   for(const i of offer.get)loss+=aiValue(i,proposerSeat);
+  const d=diff();
   if(P(seat).cash-(offer.cashGet||0)<80)return{ok:false,kind:'soft'};
-  if(gain>=loss*1.08+10)return{ok:true};
+  if(gain>=loss*d.tThresh+10)return{ok:true};
   // flexibility is deterministic per offer — re-proposing the same deal always gets the same answer
   const key=seat+'<'+proposerSeat+'|'+offer.give.join(',')+'|'+offer.get.join(',')+'|'+(offer.cashGive||0)+'|'+(offer.cashGet||0)+'|'+cardsIn+'|'+cardsOut;
-  if(gain>=loss*0.92&&offerHash(key)%100<25)return{ok:true};
+  if(gain>=loss*d.tFlexBand&&offerHash(key)%100<d.tFlexPct)return{ok:true};
   return{ok:false,kind:loss>gain*1.5?'hard':'soft'};
 }
 function validOffer(seat,o){
@@ -1550,6 +1567,7 @@ function findAIProposal(seat){
   return null;
 }
 async function aiMaybePropose(pl){
+  if(!diff().seek)return; // easy bots never initiate trades — a big, deliberate handicap
   const pr_=findAIProposal(pl.id);
   if(!pr_)return;
   state.proposed[pr_.key]=true;
@@ -1587,13 +1605,13 @@ function threatFor(seat){
   return maxRent;
 }
 function aiReserve(seat){
-  return Math.min(600,Math.max(120,Math.floor(threatFor(seat)*0.8)));
+  return Math.floor(Math.min(600,Math.max(120,threatFor(seat)*0.8))*diff().reserveMul);
 }
 function aiWantsBuy(i,seat){
   const s=B[i],me=P(seat);
   const key=completesFor(seat,i)||alive().some(p=>p.id!==seat&&completesFor(p.id,i))||s.t==='rr';
-  if(key)return liquidWorth(me)-s.p>=60;
-  return me.cash-s.p>=Math.max(100,aiReserve(seat)*0.5);
+  if(key)return liquidWorth(me)-s.p>=60; // completing/blocking a set is always worth it, any difficulty
+  return me.cash-s.p>=Math.max(100,aiReserve(seat)*0.5)*diff().buyMul;
 }
 function aiRaiseFunds(pl,target){
   const seat=pl.id;
@@ -1624,7 +1642,7 @@ function aiRaiseFunds(pl,target){
 }
 function aiManageEconomy(pl){
   const seat=pl.id;
-  const buildReserve=Math.max(80,Math.min(350,Math.floor(threatFor(seat)*0.5)));
+  const buildReserve=Math.floor(Math.max(80,Math.min(350,threatFor(seat)*0.5))*diff().buildMul);
   for(const i of ownedBy(seat)){
     const s=B[i];
     if(pr(i).mortgaged&&s.g&&hasMonopoly(seat,s.g)&&pl.cash-unmortgageCost(i)>=buildReserve){
@@ -1793,7 +1811,8 @@ async function aiTurn(pl){
   if(state.turnCount>state.players.length&&Math.random()<0.5)await aiMaybePropose(pl);
   if(dead(pl))return;
   if(pl.inJail){
-    const dangerous=threatFor(pl.id)>=100;
+    // late-game, sitting in jail dodges rent — only smart bots play it; easy ones always bolt into danger
+    const dangerous=diff().jailSmart&&threatFor(pl.id)>=100;
     if(pl.cards.length>0&&!dangerous){useJailCard(pl);say(pl,'jailOut',0.5);refresh();await sleep(400);}
     else if(!dangerous&&pl.cash>=200){pl.cash-=50;pl.inJail=false;pl.jailTurns=0;log(pl.name+' paid $50 bail.',pl.id);say(pl,'jailOut',0.5);refresh();await sleep(400);}
     else{
@@ -2172,7 +2191,7 @@ function startScreen(){
   const saved=loadSave();
   let resume='';
   if(saved&&!saved.over){
-    resume='<button class="bigbtn" id="resume">▶ Resume saved solo game<small>Turn '+(saved.turnCount+1)+' · '+saved.players.map(p=>p.name).join(' vs ')+'</small></button>';
+    resume='<button class="bigbtn" id="resume">▶ Resume saved solo game<small>Turn '+(saved.turnCount+1)+' · '+saved.players.map(p=>p.name).join(' vs ')+(saved.difficulty?' · '+DIFF[saved.difficulty].label:'')+'</small></button>';
   }
   const m=showModal(
     '<h2 style="text-align:center">🎩 MONOPOLY 🎲</h2>'+
@@ -2195,20 +2214,29 @@ function startScreen(){
     const mm=showModal('<h2 style="text-align:center">🤖 You vs the bots</h2>'+
       '<h3 style="text-align:center">Your token</h3>'+tokenPickerHTML()+
       '<h3 style="text-align:center">Opponents</h3>'+countPickerHTML('botcount',['1 bot','2 bots','3 bots'],0)+
+      '<h3 style="text-align:center">Difficulty</h3>'+countPickerHTML('difpick',DIFFKEYS.map(k=>DIFF[k].label),1)+
+      '<p id="difblurb" style="text-align:center;color:#93a0ae;font-size:12px;min-height:16px"></p>'+
       '<div class="mbtns" style="justify-content:center"><button class="abtn primary" id="gosolo">Start Game</button><button class="abtn" id="back">Back</button></div>');
     const getTok=wireTokenPicker(mm);
     const getBots=wireCountPicker(mm,'botcount',0);
+    const getDif=wireCountPicker(mm,'difpick',1);
+    const BLURB=['Timid, over-cautious, and easy to swindle in trades — a gentle warm-up.','A balanced, competitive opponent who plays a solid game.','Buys aggressively, hunts monopoly trades, builds fast, and won’t be cheated. Good luck.'];
+    const blurbEl=mm.querySelector('#difblurb');
+    const setBlurb=()=>{blurbEl.textContent=BLURB[getDif()];};
+    mm.querySelectorAll('#difpick [data-n]').forEach(b=>b.addEventListener('click',setBlurb));
+    setBlurb();
     mm.querySelector('#back').onclick=()=>startScreen();
     mm.querySelector('#gosolo').onclick=()=>{
       const ht=getTok();
       const nBots=getBots()+1;
+      const difKey=DIFFKEYS[getDif()];
       const rest=shuffle(TOKENS.filter(t=>t!==ht));
       const spec=[{name:'You',token:ht,ai:false}];
       for(let k=0;k<nBots;k++)spec.push({name:AINAMES[k],token:rest[k],ai:true});
-      state=freshState(spec);
+      state=freshState(spec,difKey);
       closeModal();
       $('log').innerHTML='';
-      log('— New game! '+spec.map(s=>s.token+' '+s.name).join(' vs ')+' —','g');
+      log('— New game! '+spec.map(s=>s.token+' '+s.name).join(' vs ')+' · '+DIFF[difKey].label+' bots —','g');
       state.players.filter(p=>p.ai).forEach(p=>say(p,'start'));
       refresh();save();gameLoop();
     };
@@ -2261,6 +2289,7 @@ function rulesModal(){
     '<li>Income Tax $200 flat · Luxury Tax $100 · Free Parking pays nothing</li>'+
     '<li>Trade properties, cash & jail cards with any player on your turn</li>'+
     '<li>Bankruptcy hands your assets to the creditor (buildings liquidate to cash) — last player standing wins</li>'+
+    '<li>Solo bots come in three flavours: 😊 Easy, 😐 Normal, 😈 Ruthless — chosen when you start</li>'+
     '<li>Online: the host’s browser runs the game — the host should keep their tab open; a disconnected player forfeits</li>'+
     '</ul>'+
     '<div class="mbtns"><button class="abtn" id="rclose">Close</button></div>'
