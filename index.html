@@ -188,6 +188,25 @@ aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:
 #log .l0{color:#8db8f5;} #log .l1{color:#f0a08c;} #log .l2{color:#8ce0a8;} #log .l3{color:#cfa6f2;}
 #log .lg{color:#9aa5b1;} #log .lq{color:#d9c06a; font-style:italic;}
 #log div{margin-bottom:2px;}
+/* ---------- EVENT TOASTS ---------- */
+#toasts{
+  position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:70;
+  display:flex; flex-direction:column; gap:8px; align-items:center; pointer-events:none;
+}
+.toast{
+  background:#1c232d; border:1px solid #3a4656; border-left:5px solid #8a94a0;
+  color:var(--text); padding:10px 18px; border-radius:10px; font-size:14.5px; font-weight:700;
+  box-shadow:0 8px 24px rgba(0,0,0,.55); max-width:540px; text-align:center; line-height:1.45;
+  animation:toastin .25s ease-out;
+}
+.toast small{display:block; font-weight:400; font-size:12px; color:#aeb9c6;}
+.toast.good{border-left-color:#2f9c60; background:#132419;}
+.toast.bad{border-left-color:#c8302e; background:#2a1512;}
+.toast.jail{border-left-color:#4a7fd4; background:#131c2c;}
+.toast.info{border-left-color:#c8b45a;}
+.toast.out{animation:toastout .3s forwards;}
+@keyframes toastin{from{opacity:0; transform:translateY(-12px);}to{opacity:1; transform:none;}}
+@keyframes toastout{to{opacity:0; transform:translateY(-8px);}}
 /* ---------- MODALS ---------- */
 #overlay{
   position:fixed; inset:0; background:rgba(5,8,12,.72); display:none;
@@ -271,6 +290,7 @@ aside{flex:0 0 340px; display:flex; flex-direction:column; gap:10px; min-height:
     <div id="log"></div>
   </aside>
 </main>
+<div id="toasts"></div>
 <div id="overlay"><div id="modal"></div></div>
 <script>
 "use strict";
@@ -449,7 +469,7 @@ const q=a=>a[Math.floor(Math.random()*a.length)];
 const TOKENS=['🎩','🐕','🐈','🏎️','🚢','⛵','👢','🐎','🦖','🐧','🦆','🛒'];
 const AINAMES=['Claude','Claudette','Claude Jr.'];
 const SAVEKEY='monopoly_1v1_save_v1';
-const GAME_VERSION=6; // bump on every release — online play requires all players to match
+const GAME_VERSION=7; // bump on every release — online play requires all players to match
 /* ================= SOUND ================= */
 const SND={enabled:(function(){try{return localStorage.getItem('mono_snd')!=='off';}catch(e){return true;}})(),ctx:null};
 function tone(f,t0,dur,type,vol){
@@ -603,6 +623,41 @@ function log(msg,cls){
 }
 function quip(pl,txt){log(pl.name+': “'+txt+'”','q');}
 function status(txt){$('status').textContent=txt||'';}
+/* ---------- EVENT TOASTS: big moments pop up for everyone, phrased per viewer ---------- */
+function toast(html,kind,ms){
+  const box=$('toasts');
+  if(!box)return;
+  const d=document.createElement('div');
+  d.className='toast '+(kind||'info');
+  d.innerHTML=html;
+  box.appendChild(d);
+  while(box.children.length>3)box.firstChild.remove();
+  setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),320);},ms||2400);
+}
+function nameFor(seat){return seat===NET.seat?'You':P(seat).name;}
+function showEvent(ev){
+  if(!state)return;
+  switch(ev.k){
+    case 'pay':{
+      const from=nameFor(ev.from), to=ev.to==null?'the bank':nameFor(ev.to);
+      const kind=ev.from===NET.seat?'bad':ev.to===NET.seat?'good':'info';
+      toast('💸 <b>'+from+'</b> paid <b>'+fmt(ev.amt)+'</b> to <b>'+to+'</b>'+(ev.what?'<small>'+ev.what+'</small>':''),kind);
+      break;
+    }
+    case 'jail': toast('🚔 <b>'+nameFor(ev.who)+'</b> '+(ev.who===NET.seat?'go':'goes')+' to Jail!','jail',2800); break;
+    case 'free': toast('🔓 <b>'+nameFor(ev.who)+'</b> — out of Jail!','jail',1800); break;
+    case 'go': toast('💰 <b>'+nameFor(ev.who)+'</b> collected $200 salary','good',1500); break;
+    case 'buy': toast('🏷️ <b>'+nameFor(ev.who)+'</b> bought <b>'+ev.prop+'</b> for '+fmt(ev.amt),ev.who===NET.seat?'good':'info'); break;
+    case 'bankrupt': toast('💥 <b>'+nameFor(ev.who)+'</b> — BANKRUPT!','bad',3400); break;
+    case 'tradeStart': toast('🤝 <b>'+nameFor(ev.from)+'</b> is proposing a trade to <b>'+nameFor(ev.to)+'</b>…','info',2200); break;
+    case 'tradeDone': toast('🤝 <b>Trade!</b> '+nameFor(ev.from)+' gave: '+ev.gaveTxt+'<small>⇄ '+nameFor(ev.to)+' gave: '+ev.gotTxt+'</small>','good',4200); break;
+    case 'tradeNo': toast('🤝 <b>'+nameFor(ev.to)+'</b> declined '+nameFor(ev.from)+'’s trade','info',2200); break;
+  }
+}
+function announce(ev){
+  showEvent(ev);
+  if(NET.mode==='host')hostBroadcast({t:'ev',ev:ev});
+}
 /* ================= BOARD RENDER ================= */
 function cellPos(i){
   if(i===0)return[11,11]; if(i<10)return[11,11-i];
@@ -799,7 +854,7 @@ async function ioTradeDecide(pid,offer,proposerName){
 async function moveSteps(pl,n){
   for(let k=0;k<n;k++){
     pl.pos=(pl.pos+1)%40;
-    if(pl.pos===0){pl.cash+=200;sfx('cash');log(pl.name+' passed GO — collect $200.',pl.id);}
+    if(pl.pos===0){pl.cash+=200;sfx('cash');log(pl.name+' passed GO — collect $200.',pl.id);announce({k:'go',who:pl.id});}
     refresh();
     await sleep(120);
   }
@@ -811,6 +866,7 @@ async function goToJail(pl){
   pl.pos=10;pl.inJail=true;pl.jailTurns=0;
   sfx('jail');
   log(pl.name+' — straight to Jail. 🚔',pl.id);
+  announce({k:'jail',who:pl.id});
   say(pl,'jail');
   refresh();
   await sleep(500);
@@ -875,6 +931,7 @@ async function charge(pl,amount,to,what){
   if(to)to.cash+=amount;
   sfx('pay');
   log(pl.name+' paid '+fmt(amount)+(to?' to '+to.name:'')+'.',pl.id);
+  announce({k:'pay',from:pl.id,to:to?to.id:null,amt:amount,what:what||''});
   refresh();
   return true;
 }
@@ -905,6 +962,7 @@ async function bankrupt(pl,creditor){
     else{const defs=d==='chance'?CHANCE:CHEST;state.decks[d].push(defs.findIndex(c=>c.gooj));}
   }
   log('💥 '+pl.name+' is BANKRUPT!','g');
+  announce({k:'bankrupt',who:pl.id});
   say(pl,'myBankrupt');
   if(creditor&&!creditor.bankrupt&&salvage>0){creditor.cash+=salvage;log(creditor.name+' receives '+pl.name+'’s remaining assets ('+fmt(salvage)+' plus deeds).','g');}
   else if(salvage>0)log(pl.name+'’s properties return to the bank.','g');
@@ -953,6 +1011,7 @@ async function offerProperty(pl,i){
         pl.cash-=s.p;pr(i).owner=pl.id;
         sfx('cash');
         log(pl.name+' bought '+s.n+' for '+fmt(s.p)+'.',pl.id);
+        announce({k:'buy',who:pl.id,prop:s.n,amt:s.p});
         say(pl,'buy',0.75);
         refresh();return;
       }
@@ -974,6 +1033,7 @@ async function offerProperty(pl,i){
       pl.cash-=s.p;pr(i).owner=pl.id;
       sfx('cash');
       log(pl.name+' bought '+s.n+' for '+fmt(s.p)+'.',pl.id);
+      announce({k:'buy',who:pl.id,prop:s.n,amt:s.p});
       refresh();return;
     }
     if(c==='buy')continue;
@@ -1027,6 +1087,7 @@ async function auction(i){
   w.cash-=bid;pr(i).owner=leader;
   sfx('cash');
   log(w.name+' won the auction for '+s.n+' at '+fmt(bid)+'!',leader);
+  announce({k:'buy',who:leader,prop:s.n+' (auction)',amt:bid});
   say(w,'buy',0.75);
   refresh();
 }
@@ -1144,6 +1205,7 @@ function useJailCard(pl){
   state.decks[deckName].push(idx);
   pl.inJail=false;pl.jailTurns=0;
   log(pl.name+' used a Get Out of Jail Free card.',pl.id);
+  announce({k:'free',who:pl.id});
 }
 /* ================= SPACE INFO ================= */
 function showSpaceInfo(i){
@@ -1369,6 +1431,7 @@ function applyTrade(seat,o){
   P(seat).cash+=o.cashGet-o.cashGive;
   P(other).cash+=o.cashGive-o.cashGet;
   log('Trade completed: '+P(seat).name+' gave ['+sideTxt(o.give,o.cashGive,o.cardsGive)+'] to '+P(other).name+' for ['+sideTxt(o.get,o.cashGet,o.cardsGet)+'].','g');
+  announce({k:'tradeDone',from:seat,to:other,gaveTxt:sideTxt(o.give,o.cashGive,o.cardsGive),gotTxt:sideTxt(o.get,o.cashGet,o.cardsGet)});
   refresh();
   if(!state.pendingRoll)save();
 }
@@ -1448,6 +1511,7 @@ async function doTrade(seat){
     ok=v.ok;kind=v.kind||'soft';
   }else{
     log(P(seat).name+' proposes a trade — waiting for '+target.name+'…','g');
+    announce({k:'tradeStart',from:seat,to:other});
     ok=await ioTradeDecide(other,offer,P(seat).name);
     if(!validOffer(seat,offer))ok=false;
   }
@@ -1455,6 +1519,7 @@ async function doTrade(seat){
     applyTrade(seat,offer);
     say(target,'tradeAccept');
   }else{
+    announce({k:'tradeNo',from:seat,to:other});
     if(target.ai)say(target,kind==='hard'?'tradeHardNo':'tradeSoftNo');
     else log(target.name+' declined the trade.','g');
   }
@@ -1496,12 +1561,14 @@ async function aiMaybePropose(pl){
     return;
   }
   say(pl,'tradeOffer');
+  announce({k:'tradeStart',from:pl.id,to:pr_.o});
   await sleep(400);
   const accepted=await ioTradeDecide(pr_.o,offer,pl.name);
   if(accepted){
     applyTrade(pl.id,offer);
     say(pl,'tradeAccept');
   }else{
+    announce({k:'tradeNo',from:pl.id,to:pr_.o});
     say(pl,'tradeWithdraw');
   }
 }
@@ -1652,6 +1719,7 @@ async function humanTurn(pl){
 async function humanJailRoll(pl,a,b){
   if(a===b){
     log('Doubles — '+pl.name+' is free!',pl.id);
+    announce({k:'free',who:pl.id});
     pl.inJail=false;pl.jailTurns=0;
     await moveSteps(pl,a+b);await landOn(pl,a+b);
   }else{
@@ -1750,6 +1818,7 @@ async function aiTurn(pl){
 async function aiJailRoll(pl,a,b){
   if(a===b){
     log('Doubles — '+pl.name+' is out of jail!',pl.id);
+    announce({k:'free',who:pl.id});
     say(pl,'jailOut',0.7);
     pl.inJail=false;pl.jailTurns=0;
     await moveSteps(pl,a+b);await landOn(pl,a+b);
@@ -1871,6 +1940,7 @@ function guestOnData(msg){
       if(!NET.activeReq&&!state.over)status(state.turn===NET.seat?'':'Waiting for '+P(state.turn).name+'…');
       break;
     case 'log': appendLog(msg.m,msg.c); break;
+    case 'ev': if(msg.ev)showEvent(msg.ev); break;
     case 'dice': guestDice(msg); break;
     case 'card': guestCard(msg); break;
     case 'req': handleReq(msg); break;
